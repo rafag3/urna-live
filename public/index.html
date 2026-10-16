@@ -273,7 +273,45 @@
   const audio = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch {} } if (ac && ac.state === 'suspended') ac.resume(); return ac; };
   const ehCelular = /Android|iPhone|iPad/i.test(navigator.userAgent);
   if (ehCelular) document.getElementById('som').classList.add('on');
-  addEventListener('pointerdown', () => { audio(); iniciarMusica(); document.getElementById('som').classList.remove('on'); manterAcesa(); }, { once: true });
+  // iPhone: tocar mesmo com a chave no silencioso (Safari 16.4+ entende audioSession)
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}
+  // iOS mais antigo: um <audio> mudo em loop coloca a página em "modo mídia"
+  let mudo = null;
+  function audioMudo() {
+    if (mudo) return;
+    const sr = 8000, n = sr / 2, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    const w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    w(36, 'data'); v.setUint32(40, n * 2, true);
+    mudo = new Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })));
+    mudo.loop = true; mudo.setAttribute('playsinline', ''); mudo.play().catch(() => {});
+  }
+  const somAviso = document.getElementById('som');
+  // o iOS só libera áudio no FIM do toque (touchend/click), não no início
+  function destravarAudio() {
+    manterAcesa();
+    audioMudo();
+    const a = audio(); if (!a) return;
+    try { const b = a.createBuffer(1, 1, 22050), src = a.createBufferSource(); src.buffer = b; src.connect(a.destination); src.start(0); } catch {}
+    const ok = () => {
+      if (a.state !== 'running') return; // continua esperando o próximo toque
+      iniciarMusica(); somAviso.classList.remove('on');
+      ['touchend', 'click'].forEach((ev) => removeEventListener(ev, destravarAudio));
+    };
+    (a.resume ? a.resume() : Promise.resolve()).then(ok, ok);
+  }
+  ['touchend', 'click'].forEach((ev) => addEventListener(ev, destravarAudio));
+  // voltou do TikTok para o jogo: o iPhone pode ter pausado o áudio
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !ac) return;
+    ac.resume().catch(() => {});
+    if (mudo) mudo.play().catch(() => {});
+    setTimeout(() => {
+      if (ac.state !== 'running') { somAviso.classList.add('on'); ['touchend', 'click'].forEach((ev) => addEventListener(ev, destravarAudio)); }
+    }, 600);
+  });
   // impede o celular de apagar a tela durante a live
   let wake = null;
   async function manterAcesa() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch {} }
