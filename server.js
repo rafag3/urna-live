@@ -304,13 +304,62 @@ function startSimulador() {
   }, 700);
 }
 
+// ---- fonte alternativa: Cloud WebSocket do Euler Stream (plano Community é grátis)
+// O Euler mantém a conexão com o TikTok na infraestrutura dele e repassa os eventos em JSON:
+// { timestamp, messages: [ { type: 'WebcastChatMessage', data: {...} }, ... ] }
+// O "data" segue os mesmos tipos do tiktok-live-connector, então reaproveita os mesmos handlers.
+const EULER_CLOSE = {
+  4404: 'streamer não está ao vivo', 4005: 'live encerrada', 4429: 'conexões demais',
+  4400: 'opções inválidas', 4401: 'chave do Euler inválida', 4403: 'sem permissão',
+  4500: 'TikTok fechou a conexão', 4006: 'sem mensagens (conexão morta)', 4556: 'erro no /webcast/fetch',
+  4557: 'erro no /webcast/room_info', 4555: 'limite de 8h', 1011: 'erro interno do Euler',
+};
+function startEuler(username, apiKey) {
+  const WebSocket = require('ws');
+  let tentativa = 0, primeiros = 0;
+  const conectar = () => {
+    const url = 'wss://ws.eulerstream.com?' + new URLSearchParams({ uniqueId: username, apiKey }).toString();
+    setStatus(`conectando em @${username} (Euler)…`);
+    const ws = new WebSocket(url);
+    ws.on('open', () => { tentativa = 0; chatsLogados = 0; setStatus(`conectado @${username}`); });
+    ws.on('message', (raw) => {
+      let pacote; try { pacote = JSON.parse(raw); } catch { return; }
+      const lista = Array.isArray(pacote.messages) ? pacote.messages : [pacote];
+      for (const m of lista) {
+        const t = m && m.type, d = (m && m.data) || {};
+        if (primeiros < 15) { primeiros++; console.log(`[euler] evento: ${t}`); }
+        if (t === 'WebcastChatMessage') onComentario(d.user, d.comment);
+        else if (t === 'WebcastLikeMessage') onCurtida(d.user, d.likeCount ?? d.count);
+        else if (t === 'WebcastMemberMessage' || t === 'SyntheticJoinMessage') onEntrada(d.user);
+        else if (t === 'WebcastGiftMessage') {
+          const tipo = d.giftDetails?.giftType ?? d.gift?.type;
+          if (tipo === 1 && !d.repeatEnd) continue; // sequência em andamento: conta só no fim
+          const nome = d.giftDetails?.giftName || d.gift?.name || String(d.giftId);
+          console.log(`[presente] ${d.user?.uniqueId} -> "${nome}" x${d.repeatCount || 1}`);
+          onPresente(d.user, { nome, repeticoes: d.repeatCount || 1, diamantes: d.giftDetails?.diamondCount || d.gift?.diamondCount || 0 });
+        } else if (t === 'tiktok.disconnect') console.log('[euler] TikTok desconectou:', d.reason);
+      }
+    });
+    ws.on('close', (code) => {
+      const motivo = EULER_CLOSE[code] || `código ${code}`;
+      console.log(`[euler] fechou: ${code} ${motivo}`);
+      setStatus(code === 4404 || code === 4005 ? 'aguardando a live começar' : `offline: ${motivo}`);
+      if (code === 4401 || code === 4400) return; // chave/usuário errado: não adianta insistir
+      const espera = code === 4404 || code === 4005 ? 30000 : Math.min(60, 5 * 2 ** tentativa++) * 1000;
+      setTimeout(conectar, espera);
+    });
+    ws.on('error', (e) => console.error('[euler] erro:', e.message));
+  };
+  conectar();
+}
+
 async function startTikTok(username) {
   const { TikTokLiveConnection, WebcastEvent, ControlEvent } = require('tiktok-live-connector');
   let tentativa = 0;
   const conectar = async () => {
     // enableExtendedGiftInfo baixa o catálogo de presentes por um endpoint que exige plano pago
     // do Euler Stream e derruba a conexão inteira. O nome do presente já vem em cada evento.
-    const conn = new TikTokLiveConnection(username, { enableExtendedGiftInfo: false });
+    const conn = new TikTokLiveConnection(username, { enableExtendedGiftInfo: false, signApiKey: process.env.EULER_API_KEY || undefined });
 
     conn.on(WebcastEvent.CHAT, (d) => onComentario(d.user, d.comment));
     conn.on(WebcastEvent.LIKE, (d) => onCurtida(d.user, d.likeCount));
@@ -411,5 +460,10 @@ server.listen(PORT, HOST, () => {
   else if (!user || user === 'seu_usuario_aqui') {
     console.log('  Defina "tiktokUsername" no config.json ou rode com --sim.\n');
     setStatus('sem usuário configurado');
-  } else startTikTok(String(user).replace(/^@/, ''));
+  } else {
+    const nome = String(user).replace(/^@/, '');
+    // com chave do Euler, usa o Cloud WebSocket dele (evita o TikTok filtrar IP de datacenter)
+    if (process.env.EULER_API_KEY && process.env.FONTE !== 'direta') startEuler(nome, process.env.EULER_API_KEY);
+    else startTikTok(nome);
+  }
 });

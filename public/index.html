@@ -197,6 +197,10 @@
   .cta b.A{background:var(--a)} .cta b.B{background:var(--b)}
   @keyframes cta{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.07)}}
   .toasts{top:430px}
+
+  .regras{position:absolute;left:30px;right:30px;top:1228px;z-index:3;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-weight:800;font-size:26px;color:#fff;text-shadow:0 2px 0 #000,0 0 6px rgba(0,0,0,.6)}
+  .giftbox .v{font-size:54px}
 </style>
 </head>
 <body>
@@ -219,6 +223,7 @@
     </div>
 
     <div class="barra"><div class="fill" id="fill"></div></div>
+    <div class="regras" id="regras"></div>
 
     <div class="faixa">
       <div class="giftbox A" id="giftA"></div>
@@ -405,6 +410,12 @@
     const b2 = document.createElement('b'); b2.className = 'B'; b2.textContent = nums[1];
     cta.append(b1, ' OU ', b2, ' PRA VOTAR');
     configMusica(s.config.musica);
+    // regras explícitas: o que vale quanto e para quem
+    const partes = ['💬 COMENTÁRIO = 1 VOTO'];
+    for (const [nome, g] of Object.entries(presentes)) {
+      if (g.numero) partes.push(`${g.icone || '🎁'} ${g.rotulo || nome.toUpperCase()} = +${g.votos} PRO ${g.numero}`);
+    }
+    $('regras').textContent = partes.join('  ·  ');
     const bg = document.querySelector('.bg');
     if (s.config.fundo) { bg.classList.add('custom'); bg.style.backgroundImage = `url("${s.config.fundo}")`; }
     else { bg.classList.remove('custom'); bg.style.backgroundImage = ''; }
@@ -442,7 +453,8 @@
       const emoji = ent[1].icone || '🎁';
       if (ent[1].iconeImagem) { const im = new Image(); im.onerror = () => { ic.textContent = emoji; }; im.src = ent[1].iconeImagem; ic.appendChild(im); }
       else ic.textContent = emoji;
-      const v = document.createElement('div'); v.className = 'v stroke'; v.textContent = `+${ent[1].votos} VOTOS`;
+      const v = document.createElement('div'); v.className = 'v stroke';
+      v.textContent = `${ent[1].rotulo || ent[0].toUpperCase()} = +${ent[1].votos}`;
       box.append(ic, v);
     });
 

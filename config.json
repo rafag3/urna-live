@@ -23,18 +23,16 @@
     "Rose": {
       "votos": 2,
       "numero": "13",
-      "icone": "⭐",
+      "icone": "🌹",
+      "rotulo": "ROSA",
       "iconeImagem": "img/icone13.png"
     },
-    "Daisy": {
+    "TikTok": {
       "votos": 2,
       "numero": "22",
-      "icone": "💚",
+      "icone": "🎵",
+      "rotulo": "TIKTOK",
       "iconeImagem": "img/icone22.png"
-    },
-    "TikTok": {
-      "votos": 5,
-      "icone": "🎵"
     }
   },
   "votosPorDiamanteParaPresentesNaoMapeados": 1,
