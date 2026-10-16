@@ -1,0 +1,18 @@
+{
+  "name": "urna-live",
+  "version": "1.0.0",
+  "description": "Jogo da urna para TikTok LIVE",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "sim": "node server.js --sim",
+    "lan": "node server.js --lan"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tiktok-live-connector": "^2.5.0",
+    "ws": "^8.22.0"
+  }
+}

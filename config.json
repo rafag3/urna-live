@@ -1,0 +1,53 @@
+{
+  "tiktokUsername": "mazzeldigital",
+  "opcoes": [
+    {
+      "numero": "13",
+      "nome": "TIME 13",
+      "cor": "#ff2a2a",
+      "imagem": "img/time13.jpg"
+    },
+    {
+      "numero": "22",
+      "nome": "TIME 22",
+      "cor": "#1fd65f",
+      "imagem": "img/time22.jpg"
+    }
+  ],
+  "comentario": {
+    "habilitado": true,
+    "votos": 1,
+    "cooldownSegundos": 15
+  },
+  "presentes": {
+    "Rose": {
+      "votos": 2,
+      "numero": "13",
+      "icone": "⭐",
+      "iconeImagem": "img/icone13.png"
+    },
+    "Daisy": {
+      "votos": 2,
+      "numero": "22",
+      "icone": "💚",
+      "iconeImagem": "img/icone22.png"
+    },
+    "TikTok": {
+      "votos": 5,
+      "icone": "🎵"
+    }
+  },
+  "votosPorDiamanteParaPresentesNaoMapeados": 1,
+  "multiplicadorFinal": {
+    "segundos": 60,
+    "fator": 5
+  },
+  "rodada": {
+    "duracaoSegundos": 300,
+    "exibirVencedorSegundos": 12,
+    "reiniciarAutomaticamente": true
+  },
+  "comboJanelaSegundos": 8,
+  "fundo": "",
+  "mostrarTotalDeVotos": true
+}
