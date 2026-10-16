@@ -619,6 +619,7 @@
       else if (m.type === 'entrou') toast(`👋 @${m.user.nick} chegou! Comenta ${m.numeros.join(' ou ')}`, 'pend');
       else if (m.type === 'reset') { fila.length = 0; ocioso(); }
       else if (m.type === 'status') status(m.conexao);
+      else if (m.type === 'modo' && m.modo !== 'urna') location.replace('/' + location.search);
     };
     ws.onclose = (e) => {
       if (e.code === 4001) return status('chave inválida: use o link com ?k= que aparece no terminal');

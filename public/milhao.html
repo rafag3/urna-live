@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Rumo ao Milhão</title>
+<style>
+  @font-face{font-family:"Bebas Neue";src:url(fonts/bebas-neue-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:block}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:block}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:block}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-900-normal.woff2) format("woff2");font-weight:900;font-display:block}
+  :root{ --gold:#ffd23f; --gold2:#ffb000; --azul:#0a2fb8; --ok:#1fd65f; --no:#ff3b4a; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Inter,system-ui,sans-serif;color:#fff}
+  #stage{position:absolute;left:50%;top:50%;width:1080px;height:1920px;transform-origin:center;overflow:hidden;
+    background:linear-gradient(180deg,#02051f 0%,#061055 84%,#040a3a 84.4%,#020619 100%)}
+  .bebas{font-family:"Bebas Neue",Impact,"Arial Narrow",sans-serif;font-weight:400;letter-spacing:1px}
+  .stroke{-webkit-text-stroke:8px #000;paint-order:stroke fill}
+
+  /* ---------- camadas da arte ---------- */
+  .cenario{position:absolute;left:0;top:0;width:1080px;height:1620px;background:url(img/milhao-cenario.jpg) center/100% 100% no-repeat}
+  .chao{position:absolute;left:0;right:0;top:1620px;bottom:0;background:linear-gradient(180deg,#071565,#020619 70%)}
+  .chao::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 118px,rgba(90,140,255,.12) 118px 120px);transform:perspective(500px) rotateX(55deg);transform-origin:top}
+
+  /* holofotes varrendo */
+  .feixe{position:absolute;top:-120px;width:240px;height:1500px;transform-origin:50% 0;mix-blend-mode:screen;filter:blur(14px);
+    background:linear-gradient(180deg,rgba(150,190,255,.55),rgba(80,120,255,.12) 55%,transparent 85%);clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);pointer-events:none}
+  .f1{left:-60px;animation:varre 7s ease-in-out infinite alternate}
+  .f2{left:250px;animation:varre2 9s ease-in-out infinite alternate}
+  .f3{right:250px;animation:varre 8s ease-in-out infinite alternate-reverse}
+  .f4{right:-60px;animation:varre2 6s ease-in-out infinite alternate-reverse}
+  @keyframes varre{from{transform:rotate(-28deg)}to{transform:rotate(18deg)}}
+  @keyframes varre2{from{transform:rotate(22deg)}to{transform:rotate(-20deg)}}
+
+  /* lâmpadas piscando (sobre as fileiras de luz da arte) */
+  .lamp{position:absolute;height:18px;background:radial-gradient(circle,#fff6c9 0 4px,rgba(255,200,60,.9) 5px,transparent 9px) 0 50%/30px 18px repeat-x;mix-blend-mode:screen;animation:pisca 1.2s steps(2) infinite}
+  .lamp.b{animation-delay:-.6s}
+  @keyframes pisca{50%{opacity:.25}}
+  .lamp.corre{animation:corre 1.6s linear infinite}
+  @keyframes corre{to{background-position:30px 50%}}
+
+  /* brilhos */
+  .brilho{position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 12px 4px rgba(255,255,255,.8);animation:tw 2.4s ease-in-out infinite;opacity:0}
+  @keyframes tw{50%{opacity:1;transform:scale(1.6)}}
+
+  /* moeda: brilho pulsando atrás do título */
+  .moeda-glow{position:absolute;left:330px;top:40px;width:420px;height:440px;border-radius:50%;background:radial-gradient(circle,rgba(255,215,80,.55),transparent 65%);mix-blend-mode:screen;animation:pulsa 2.2s ease-in-out infinite}
+  @keyframes pulsa{50%{transform:scale(1.12);opacity:.6}}
+
+  /* título próprio (cobre o logo da arte) */
+  .titulo{position:absolute;left:20px;top:92px;width:1040px;height:330px;perspective:900px}
+  .placa{position:absolute;border-radius:18px;background:linear-gradient(180deg,#2b6dff 0%,#0d3fd6 45%,#062a96 100%);
+    border:6px solid #8fc1ff;box-shadow:inset 0 6px 0 rgba(255,255,255,.35),inset 0 -12px 0 rgba(0,0,0,.35),0 16px 0 #021a66,0 24px 30px rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:center}
+  .placa.p1{left:8px;top:6px;width:440px;height:250px;transform:rotateY(16deg) rotateZ(-4deg);animation:flutua 3.2s ease-in-out infinite}
+  .placa.pm{left:420px;top:118px;width:180px;height:120px;z-index:2;transform:rotateZ(-2deg);animation:flutua3 2.8s ease-in-out infinite}
+  @keyframes flutua3{50%{transform:rotateZ(1deg) translateY(-8px)}}
+  .pm .ouro{font-size:96px;padding-top:10px}
+  .placa.p2{left:566px;width:460px;top:44px;width:490px;height:280px;transform:rotateY(-16deg) rotateZ(4deg);animation:flutua2 3.6s ease-in-out infinite}
+  @keyframes flutua{50%{transform:rotateY(16deg) rotateZ(-2deg) translateY(-12px)}}
+  @keyframes flutua2{50%{transform:rotateY(-16deg) rotateZ(2deg) translateY(-14px)}}
+  .ouro{font-family:"Bebas Neue",Impact,sans-serif;line-height:.9;text-align:center;
+    background:linear-gradient(180deg,#fff7c2 0%,#ffd23f 40%,#f39b12 75%,#c96a00 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(4px 0 0 #3b1d00) drop-shadow(-4px 0 0 #3b1d00) drop-shadow(0 4px 0 #3b1d00) drop-shadow(0 -4px 0 #3b1d00) drop-shadow(0 10px 0 rgba(0,0,0,.45))}
+  .p1 .ouro{font-size:190px;padding-top:20px} .p2 .ouro{font-size:170px;padding-top:24px}
+  .placa::after{content:"";position:absolute;inset:0;border-radius:12px;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);background-size:250% 100%;animation:shine 3.5s ease-in-out infinite;pointer-events:none}
+  .placa.p2::after{animation-delay:-1.7s}
+  @keyframes shine{0%,40%{background-position:120% 0}100%{background-position:-120% 0}}
+
+  /* apresentador */
+  .host{position:absolute;left:115px;top:312px;width:808px;height:605px;transform-origin:50% 100%;animation:fala 2.6s ease-in-out infinite;filter:drop-shadow(0 0 30px rgba(80,140,255,.35))}
+  .host img{width:100%;height:100%;display:block}
+  @keyframes fala{0%,100%{transform:rotate(-.8deg) translateY(0) scale(1)}25%{transform:rotate(.6deg) translateY(-6px) scale(1.01)}50%{transform:rotate(1deg) translateY(-2px) scale(1.005)}75%{transform:rotate(-.4deg) translateY(-8px) scale(1.012)}}
+  .host.pulo{animation:pulo .6s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes pulo{0%{transform:translateY(0)}40%{transform:translateY(-34px) scale(1.04) rotate(-2deg)}100%{transform:translateY(0)}}
+
+  /* ---------- pergunta e alternativas (encaixadas nas caixas da arte) ---------- */
+  .hex{clip-path:polygon(4.5% 0,95.5% 0,100% 50%,95.5% 100%,4.5% 100%,0 50%)}
+  .pergunta{position:absolute;left:47px;top:920px;width:981px;height:158px;display:flex;align-items:center;justify-content:center;padding:0 90px;text-align:center}
+  .pergunta .bg2{position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(140,190,255,.18),rgba(255,255,255,0));animation:onda 3s linear infinite;background-size:200% 100%}
+  @keyframes onda{to{background-position:-200% 0}}
+  .pergunta .txt{position:relative;font-weight:900;line-height:1.1;text-shadow:0 3px 0 #000,0 0 16px rgba(0,30,120,.9)}
+  .pergunta .txt.entra{animation:entra .55s cubic-bezier(.2,.9,.2,1.15)}
+  @keyframes entra{0%{opacity:0;transform:scale(.85) translateY(20px)}100%{opacity:1;transform:none}}
+  .cat{position:absolute;left:50%;top:888px;transform:translateX(-50%);z-index:3;font-weight:900;font-size:24px;padding:5px 18px;border-radius:999px;background:var(--gold);color:#111;border:4px solid #000;white-space:nowrap}
+  .nperg{position:absolute;right:66px;top:1040px;font-size:30px;color:rgba(255,255,255,.7);z-index:3}
+
+  .alt{position:absolute;height:100px;display:flex;align-items:center;gap:14px;padding:0 50px 0 40px;transition:filter .35s, transform .2s}
+  .alt .tint{position:absolute;inset:0;background:transparent;transition:background .3s}
+  .alt .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,rgba(255,210,63,.0),rgba(255,210,63,.35));transition:width .5s cubic-bezier(.2,.8,.2,1)}
+  .alt .l{position:relative;font-size:56px;color:var(--gold);line-height:1;padding-top:6px;text-shadow:0 3px 0 #000}
+  .alt .t{position:relative;flex:1;font-weight:900;line-height:1.05;text-shadow:0 3px 0 #000}
+  .alt .p{position:relative;font-size:40px;color:#fff;text-shadow:0 3px 0 #000}
+  .a0{left:37px;top:1102px;width:496px} .a1{left:543px;top:1102px;width:501px}
+  .a2{left:37px;top:1218px;width:496px} .a3{left:543px;top:1218px;width:501px}
+  .alt.bump{transform:scale(1.035)}
+  .alt.bump .tint{background:rgba(255,255,255,.18)}
+  .alt.certa .tint{background:rgba(31,214,95,.75);animation:certa .6s ease-in-out infinite alternate}
+  @keyframes certa{to{background:rgba(31,214,95,.95)}}
+  .alt.certa{transform:scale(1.04);filter:drop-shadow(0 0 22px #1fd65f)}
+  .alt.errada .tint{background:rgba(0,0,0,.6)}
+  .alt.errada{filter:grayscale(.7)}
+
+  /* escada */
+  .escada{position:absolute;left:30px;right:30px;top:1330px;display:grid;grid-template-columns:repeat(10,1fr);gap:6px;z-index:2}
+  .deg{height:40px;border-radius:10px;border:3px solid rgba(255,210,63,.6);background:rgba(4,12,60,.85);display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,255,255,.7);transition:all .3s}
+  .deg.feito{background:#0b6b45;border-color:#1fd65f;color:#fff}
+  .deg.atual{background:var(--gold);border-color:#fff;color:#111;transform:scale(1.2);box-shadow:0 0 22px var(--gold)}
+
+  /* púlpito: valendo + cronômetro na telinha */
+  .valendo{position:absolute;left:272px;width:536px;top:1384px;text-align:center;line-height:.9;z-index:2}
+  .valendo .t{font-size:30px;color:#9cc0ff} .valendo .v{font-size:56px;color:var(--gold);text-shadow:0 3px 0 #000,0 0 18px rgba(255,190,0,.6)}
+  .crono{position:absolute;left:402px;width:270px;top:1470px;height:140px;display:flex;align-items:center;justify-content:center;font-size:128px;color:#fff;text-shadow:0 0 18px #4aa3ff,0 4px 0 #000;z-index:2}
+  .crono.urg{color:#ff4d5a;text-shadow:0 0 26px #ff2233,0 4px 0 #000;animation:bate .5s infinite}
+  @keyframes bate{50%{transform:scale(1.12)}}
+
+  /* contadores nas laterais do púlpito */
+  .cont{position:absolute;top:1450px;width:230px;text-align:center;line-height:.9;z-index:2;padding:12px 0;border-radius:24px;background:rgba(2,8,40,.75);border:4px solid rgba(120,170,255,.5)}
+  .cont .n{font-size:84px} .cont .lb{font-size:32px}
+  .cont.v{left:22px} .cont.v .lb{color:var(--ok)}
+  .cont.f{right:22px} .cont.f .lb{color:var(--no)}
+
+  /* parte de baixo */
+  .cta{position:absolute;top:1640px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:56px;padding:8px 34px 2px;border-radius:999px;background:var(--gold);color:#111;border:6px solid #000;box-shadow:0 8px 0 rgba(0,0,0,.4),0 0 30px rgba(255,210,63,.5);animation:cta 1.4s ease-in-out infinite;z-index:3}
+  .cta b{font-weight:400;color:#fff;background:#0a2fb8;padding:0 10px;border-radius:10px;margin:0 2px}
+  .cta.fechada{font-size:42px}
+  @keyframes cta{50%{transform:translateX(-50%) scale(1.05)}}
+  .quem{position:absolute;top:1740px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:14px;z-index:3;height:70px}
+  .quem img,.quem .av{width:64px;height:64px;border-radius:50%;object-fit:cover;background:#223;border:4px solid var(--gold)}
+  .quem span{font-weight:900;font-size:32px;text-shadow:0 3px 0 #000}
+  .regras{position:absolute;left:20px;right:20px;bottom:62px;text-align:center;font-weight:900;font-size:26px;text-shadow:0 2px 0 #000;z-index:3}
+  .legal{position:absolute;left:20px;right:20px;bottom:26px;text-align:center;font-weight:700;font-size:20px;color:rgba(255,255,255,.55);z-index:3}
+
+  /* revelação: faixa de eliminados/salvos */
+  .faixa{position:absolute;top:1632px;left:30px;right:30px;height:190px;z-index:5;display:none;flex-direction:column;align-items:center;gap:8px;background:rgba(4,6,30,.94);border:5px solid var(--gold);border-radius:26px;padding:12px}
+  .faixa.on{display:flex;animation:entra .4s}
+  .faixa .tit{font-size:48px;line-height:1} .faixa .tit.e{color:var(--no)} .faixa .tit.s{color:var(--ok)}
+  .faixa .lst{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-height:110px;overflow:hidden}
+  .pess{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border-radius:999px;padding:4px 14px 4px 4px;font-weight:800;font-size:24px;animation:cai .6s ease-in both}
+  .pess img,.pess .av{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#555}
+  @keyframes cai{from{opacity:0;transform:translateY(-30px) rotate(-8deg)}}
+  .carimbo{position:absolute;left:50%;top:820px;z-index:6;transform:translateX(-50%) rotate(-5deg);font-size:84px;padding:6px 30px 0;border-radius:18px;border:8px solid #fff;background:#0b8a3a;color:#fff;display:none;white-space:nowrap;box-shadow:0 10px 0 rgba(0,0,0,.4)}
+  .carimbo.on{display:block;animation:carimbo .45s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes carimbo{0%{transform:translateX(-50%) rotate(-5deg) scale(2.4);opacity:0}100%{transform:translateX(-50%) rotate(-5deg) scale(1);opacity:1}}
+
+  /* fim de rodada */
+  .fim{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:rgba(2,5,30,.96);text-align:center}
+  .fim.on{display:flex;animation:entra .5s}
+  .fim .t1{font-size:84px} .fim .t2{font-size:160px;line-height:.9;color:var(--gold);text-shadow:0 6px 0 #000,0 0 30px rgba(255,190,0,.6)}
+  .fim .t3{font-weight:900;font-size:42px}
+  .fim .lista{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;max-width:960px}
+  .fim .gan{display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:900;font-size:30px}
+  .fim .gan img,.fim .gan .av{width:130px;height:130px;border-radius:50%;object-fit:cover;background:#555;border:6px solid var(--gold)}
+  .fim .hall{margin-top:16px;width:860px}
+  .fim .hall h3{font-size:56px;color:var(--gold);margin-bottom:8px}
+  .hl{display:flex;align-items:center;gap:16px;padding:8px 20px;border-radius:20px;background:rgba(255,255,255,.08);margin-top:8px;font-weight:900;font-size:32px}
+  .hl img,.hl .av{width:56px;height:56px;border-radius:50%;object-fit:cover;background:#555}
+  .hl .n{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .hl b{color:var(--gold)}
+
+  .toasts{position:absolute;left:0;right:0;top:1742px;display:flex;justify-content:center;z-index:9;pointer-events:none}
+  .faixa.on ~ .toasts{top:1586px}
+  .toast{font-family:"Bebas Neue",Impact,sans-serif;font-size:42px;padding:6px 26px 0;border-radius:18px;background:#fff;color:#111;border:5px solid #000;animation:toast 2.8s forwards;max-width:1000px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .toast.vida{background:var(--ok)}
+  @keyframes toast{0%{opacity:0;transform:scale(.6)}10%{opacity:1;transform:scale(1.05)}18%{transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:translateY(-30px)}}
+  .status{position:absolute;left:24px;top:24px;font-size:20px;color:rgba(255,255,255,.5);z-index:10}
+  .som{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.75);font-family:"Bebas Neue",Impact,sans-serif;font-size:90px;text-align:center;line-height:1}
+  .som.on{display:flex}
+  .confete{position:absolute;width:22px;height:32px;border-radius:4px;z-index:9;pointer-events:none;animation:voa var(--d) cubic-bezier(.2,.6,.4,1) forwards}
+  @keyframes voa{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="cenario"></div><div class="chao"></div>
+  <div class="moeda-glow"></div>
+  <div class="feixe f1"></div><div class="feixe f2"></div><div class="feixe f3"></div><div class="feixe f4"></div>
+  <div class="lamp" style="left:0;top:1346px;width:200px"></div>
+  <div class="lamp b" style="right:0;top:1346px;width:220px"></div>
+  <div class="lamp corre" style="left:250px;top:620px;width:580px;opacity:.7"></div>
+  <div id="brilhos"></div>
+
+  <div class="titulo">
+    <div class="placa p1"><div class="ouro">RUMO</div></div>
+    <div class="placa pm"><div class="ouro">AO</div></div>
+    <div class="placa p2"><div class="ouro">MILHÃO</div></div>
+  </div>
+  <div class="host" id="host"><img src="img/milhao-apresentador.png" alt=""></div>
+
+  <div class="cat" id="cat">⚖️ TRABALHISTA</div>
+  <div class="pergunta hex"><div class="bg2"></div><div class="txt" id="perg"></div></div>
+  <div class="nperg bebas" id="nperg">1/10</div>
+  <div id="alts"></div>
+  <div class="carimbo bebas" id="carimbo"></div>
+
+  <div class="escada" id="escada"></div>
+  <div class="valendo bebas"><div class="t">VALENDO</div><div class="v" id="valendo">1 MIL PONTOS</div></div>
+  <div class="crono bebas" id="crono">15</div>
+  <div class="cont v"><div class="n bebas" id="nvivos">0</div><div class="lb bebas">🔥 NO JOGO</div></div>
+  <div class="cont f"><div class="n bebas" id="nfora">0</div><div class="lb bebas">💀 FORA</div></div>
+
+  <div class="cta bebas" id="cta"></div>
+  <div class="quem" id="quem"></div>
+  <div class="faixa" id="faixa"><div class="tit bebas" id="ftit"></div><div class="lst" id="flst"></div></div>
+  <div class="regras">ERROU, TÁ FORA · 🌹 PRESENTE = VIDA EXTRA OU VOLTA PRO JOGO</div>
+  <div class="legal" id="legal"></div>
+
+  <div class="fim" id="fim"></div>
+  <div class="toasts" id="toasts"></div>
+  <div class="status" id="status"></div>
+  <div class="som" id="som">TOQUE NA TELA<br>PARA ATIVAR O SOM</div>
+</div>
+
+<script src="som.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const stage = $('stage');
+  const fit = () => { const s = Math.min(innerWidth / 1080, innerHeight / 1920); stage.style.transform = `translate(-50%,-50%) scale(${s})`; };
+  addEventListener('resize', fit); fit();
+  const L = ['A', 'B', 'C', 'D'];
+
+  // brilhos espalhados no topo
+  for (let i = 0; i < 18; i++) {
+    const b = document.createElement('div'); b.className = 'brilho';
+    b.style.left = Math.random() * 1060 + 'px'; b.style.top = (20 + Math.random() * 860) + 'px';
+    b.style.animationDelay = (-Math.random() * 2.4) + 's'; b.style.animationDuration = (1.6 + Math.random() * 2) + 's';
+    $('brilhos').appendChild(b);
+  }
+
+  const altEls = L.map((l, i) => {
+    const d = document.createElement('div'); d.className = `alt hex a${i}`;
+    d.innerHTML = `<div class="tint"></div><div class="fill"></div><div class="l bebas">${l}:</div><div class="t"></div><div class="p bebas">0%</div>`;
+    $('alts').appendChild(d); return d;
+  });
+
+  let skew = 0, fimEm = 0, chave = '', faseAtual = '', ultimoSeg = -1, ultimoBlip = 0;
+
+  function avatar(url) {
+    if (url) { const i = document.createElement('img'); i.referrerPolicy = 'no-referrer'; i.src = url; i.alt = ''; i.onerror = () => i.replaceWith(Object.assign(document.createElement('div'), { className: 'av' })); return i; }
+    return Object.assign(document.createElement('div'), { className: 'av' });
+  }
+  function toast(txt, cls = '') {
+    const t = document.createElement('div'); t.className = 'toast ' + cls; t.textContent = txt;
+    $('toasts').replaceChildren(t); setTimeout(() => t.remove(), 2900);
+  }
+  function pulo() { const h = $('host'); h.classList.remove('pulo'); void h.offsetWidth; h.classList.add('pulo'); setTimeout(() => h.classList.remove('pulo'), 650); }
+  function confete(n = 70) {
+    for (let i = 0; i < n; i++) {
+      const c = document.createElement('div'); c.className = 'confete';
+      c.style.background = ['#ffd23f', '#ff3b4a', '#2f7bff', '#1fd65f', '#fff'][i % 5];
+      c.style.left = (540 + Math.random() * 200 - 100) + 'px'; c.style.top = '600px';
+      const ang = Math.random() * Math.PI * 2, dist = 300 + Math.random() * 600;
+      c.style.setProperty('--x', Math.cos(ang) * dist + 'px'); c.style.setProperty('--y', Math.sin(ang) * dist + 500 + 'px');
+      c.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg'); c.style.setProperty('--d', (1.2 + Math.random()) + 's');
+      c.addEventListener('animationend', () => c.remove(), { once: true }); stage.appendChild(c);
+    }
+  }
+  const tamPerg = (t) => t.length < 45 ? 48 : t.length < 70 ? 42 : t.length < 100 ? 36 : 32;
+  const tamAlt = (t) => t.length < 12 ? 40 : t.length < 20 ? 34 : t.length < 30 ? 28 : 24;
+
+  function aplicar(s) {
+    skew = s.agora - Date.now(); fimEm = s.fimEm;
+    if (s.conexao) status(s.conexao);
+    Som.configurar({ ...(s.musica || {}), estilo: 'suspense' });
+    $('legal').textContent = s.rodape || '';
+
+    if ($('escada').childElementCount !== s.escada.length) {
+      $('escada').replaceChildren(...s.escada.map((r) => {
+        const d = document.createElement('div'); d.className = 'deg bebas';
+        d.textContent = r.replace(' MILHÃO', 'M').replace(' MIL', 'K'); return d;
+      }));
+    }
+    [...$('escada').children].forEach((d, i) => { d.classList.toggle('feito', i < s.degrau); d.classList.toggle('atual', i === s.degrau); });
+    $('valendo').textContent = s.escada[s.degrau] + ' PONTOS';
+    $('nperg').textContent = `${s.degrau + 1}/${s.escada.length}`;
+    $('nvivos').textContent = s.vivos; $('nfora').textContent = s.eliminados;
+
+    const q = s.pergunta;
+    const k = q && `${s.rodada}:${s.degrau}:${q.id}`;
+    if (q && k !== chave) {
+      chave = k;
+      $('cat').textContent = q.categoria === 'financas' ? '💰 FINANÇAS PESSOAIS' : '⚖️ DIREITOS TRABALHISTAS';
+      $('perg').textContent = q.pergunta; $('perg').style.fontSize = tamPerg(q.pergunta) + 'px';
+      const p = $('perg'); p.classList.remove('entra'); void p.offsetWidth; p.classList.add('entra');
+      altEls.forEach((el, i) => {
+        el.classList.remove('certa', 'errada');
+        const t = el.querySelector('.t'); t.textContent = q.alternativas[i]; t.style.fontSize = tamAlt(q.alternativas[i]) + 'px';
+      });
+      $('carimbo').classList.remove('on'); $('faixa').classList.remove('on');
+      $('quem').replaceChildren();
+      pulo(); Som.tom(392, 0.1, 0, 0.1); Som.tom(523, 0.18, 0.1, 0.1);
+    }
+    contagem(s.contagem);
+    cta(s);
+
+    if (s.fase !== faseAtual) {
+      faseAtual = s.fase;
+      $('fim').classList.toggle('on', s.fase === 'fim');
+      if (s.fase === 'revelacao') revelar(s);
+      if (s.fase === 'fim') fim(s);
+      if (s.fase === 'pergunta') Som.setUrgente(false);
+    }
+  }
+
+  function contagem(c) {
+    const tot = c.reduce((a, b) => a + b, 0);
+    altEls.forEach((el, i) => {
+      const p = tot ? Math.round(c[i] / tot * 100) : 0;
+      el.querySelector('.p').textContent = p + '%';
+      el.querySelector('.fill').style.width = p + '%';
+    });
+  }
+
+  function cta(s) {
+    const el = $('cta');
+    el.style.visibility = s.fase === 'pergunta' ? '' : 'hidden';
+    el.classList.toggle('fechada', !s.entradaAberta);
+    if (s.entradaAberta) el.innerHTML = '💬 COMENTE <b>A</b> <b>B</b> <b>C</b> OU <b>D</b>';
+    else el.textContent = '🔒 ENTRADA FECHADA · 🌹 PRESENTE TE COLOCA NO JOGO';
+  }
+
+  function revelar(s) {
+    const q = s.pergunta; if (!q || q.correta == null) return;
+    Som.setUrgente(false); Som.stinger('revela');
+    setTimeout(() => {
+      altEls.forEach((el, i) => el.classList.add(i === q.correta ? 'certa' : 'errada'));
+      $('carimbo').textContent = `✔ RESPOSTA CERTA: ${L[q.correta]}`; $('carimbo').classList.add('on');
+      pulo();
+      Som.stinger(s.eliminadosAgora.length > s.vivos ? 'errado' : 'certo');
+      const lst = $('flst'); lst.replaceChildren(); $('ftit').style.fontSize = '';
+      if (s.eliminadosAgora.length) {
+        $('ftit').className = 'tit bebas e'; $('ftit').textContent = `💀 ${s.eliminadosAgora.length} ELIMINADO${s.eliminadosAgora.length > 1 ? 'S' : ''}`;
+        s.eliminadosAgora.forEach((p, i) => { const d = document.createElement('div'); d.className = 'pess'; d.style.animationDelay = (i * 0.08) + 's'; const n = document.createElement('span'); n.textContent = p.nick; d.append(avatar(p.avatar), n); lst.appendChild(d); });
+      } else if (s.salvosAgora.length) {
+        $('ftit').className = 'tit bebas s'; $('ftit').textContent = '🛡️ SALVOS PELA VIDA EXTRA';
+        s.salvosAgora.forEach((p) => { const d = document.createElement('div'); d.className = 'pess'; const n = document.createElement('span'); n.textContent = p.nick; d.append(avatar(p.avatar), n); lst.appendChild(d); });
+      } else {
+        $('ftit').className = 'tit bebas s'; $('ftit').textContent = '💡 ' + (q.explicacao || 'Ninguém caiu nessa!'); $('ftit').style.fontSize = '38px';
+      }
+      $('faixa').classList.add('on'); $('quem').replaceChildren();
+    }, 520);
+  }
+
+  function fim(s) {
+    const box = $('fim'); box.replaceChildren();
+    const add = (cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; box.appendChild(d); return d; };
+    if (s.ganhadores.length) {
+      add('t1 bebas', '🏆 TEMOS VENCEDOR!'); add('t2 bebas', '1 MILHÃO');
+      const l = document.createElement('div'); l.className = 'lista';
+      s.ganhadores.forEach((g) => { const d = document.createElement('div'); d.className = 'gan'; const n = document.createElement('span'); n.textContent = '@' + g.nick; d.append(avatar(g.avatar), n); l.appendChild(d); });
+      box.appendChild(l); Som.stinger('milhao'); confete(90);
+    } else {
+      add('t1 bebas', 'FIM DA RODADA');
+      if (s.maisLonge) {
+        add('t3', 'Quem chegou mais longe:');
+        const d = document.createElement('div'); d.className = 'gan'; const n = document.createElement('span'); n.textContent = '@' + s.maisLonge.nick; d.append(avatar(s.maisLonge.avatar), n);
+        const l = document.createElement('div'); l.className = 'lista'; l.appendChild(d); box.appendChild(l);
+        add('t2 bebas', s.maisLonge.premio);
+      } else add('t3', 'Ninguém pontuou nessa rodada. Comenta A, B, C ou D na próxima!');
+      Som.stinger('errado');
+    }
+    if (s.hall.length) {
+      const h = document.createElement('div'); h.className = 'hall';
+      const t = document.createElement('h3'); t.className = 'bebas'; t.textContent = '⭐ HALL DA FAMA DA LIVE'; h.appendChild(t);
+      s.hall.forEach((p, i) => {
+        const r = document.createElement('div'); r.className = 'hl';
+        const n = document.createElement('span'); n.className = 'n'; n.textContent = `${['🥇', '🥈', '🥉', '4º', '5º'][i]} ${p.nick}`;
+        const b = document.createElement('b'); b.textContent = p.vitorias ? `${p.vitorias}× MILHÃO` : p.melhor;
+        r.append(avatar(p.avatar), n, b); h.appendChild(r);
+      });
+      box.appendChild(h);
+    }
+    add('t3', 'Nova rodada já já… prepara o comentário!');
+  }
+
+  function resposta(m) {
+    contagem(m.contagem);
+    $('nvivos').textContent = m.vivos;
+    const el = altEls[L.indexOf(m.letra)]; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+    setTimeout(() => el.classList.remove('bump'), 200);
+    if (m.jogando && faseAtual === 'pergunta') {
+      const n = document.createElement('span'); n.textContent = `@${m.user.nick} cravou ${m.letra}`;
+      $('quem').replaceChildren(avatar(m.user.avatar), n);
+    }
+    const agora = Date.now(); if (agora - ultimoBlip > 120) { ultimoBlip = agora; Som.tom(700 + L.indexOf(m.letra) * 120, 0.05, 0, 0.06); }
+  }
+
+  function vida(m) {
+    const txt = m.acao === 'voltou' ? `🌹 @${m.user.nick} VOLTOU PRO JOGO!`
+      : m.acao === 'entrou' ? `🌹 @${m.user.nick} ENTROU COM VIDA EXTRA!`
+      : m.acao === 'max' ? `🌹 @${m.user.nick} já tem ${m.vidas} vidas!`
+      : `🛡️ @${m.user.nick} GANHOU VIDA EXTRA (${m.vidas})`;
+    toast(txt, 'vida'); pulo(); Som.tom(880, .1); Som.tom(1320, .2, .1);
+  }
+
+  setInterval(() => {
+    if (!fimEm) return;
+    const ms = Math.max(0, fimEm - (Date.now() + skew)), seg = Math.ceil(ms / 1000);
+    $('crono').textContent = faseAtual === 'pergunta' ? seg : '–';
+    const urg = faseAtual === 'pergunta' && seg <= 5 && seg > 0;
+    $('crono').classList.toggle('urg', urg);
+    Som.setUrgente(urg);
+    if (urg && seg !== ultimoSeg) { ultimoSeg = seg; Som.tom(seg === 1 ? 1500 : 1100, 0.06, 0, 0.1); }
+  }, 100);
+
+  function status(s) { $('status').textContent = s ? `● ${s}` : ''; }
+
+  function conectar() {
+    const k = new URLSearchParams(location.search).get('k') || '';
+    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws${k ? '?k=' + encodeURIComponent(k) : ''}`);
+    ws.onmessage = (e) => {
+      let m; try { m = JSON.parse(e.data); } catch { return; }
+      if (m.type === 'milhao') aplicar(m);
+      else if (m.type === 'resposta') resposta(m);
+      else if (m.type === 'vida') vida(m);
+      else if (m.type === 'entrou') toast(`👋 @${m.user.nick} chegou! Comenta A, B, C ou D`);
+      else if (m.type === 'status') status(m.conexao);
+      else if (m.type === 'modo' && m.modo !== 'milhao') location.replace('/' + location.search);
+    };
+    ws.onclose = (e) => {
+      if (e.code === 4001) return status('chave inválida: use o link com ?k=');
+      status('reconectando…'); setTimeout(conectar, 1500);
+    };
+  }
+  conectar();
+  setInterval(() => { fetch('/ping', { cache: 'no-store' }).catch(() => {}); }, 4 * 60 * 1000);
+})();
+</script>
+</body>
+</html>

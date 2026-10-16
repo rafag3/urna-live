@@ -363,6 +363,7 @@
       else if (m.type === 'dobro') { toast(`🎁 @${m.user.nick} mandou ${m.presente}: PONTOS EM DOBRO!`); Som.tom(880, .1); Som.tom(1320, .2, .1); }
       else if (m.type === 'entrou') toast(`👋 @${m.user.nick} chegou! Comenta V ou F`, 'br');
       else if (m.type === 'status') status(m.conexao);
+      else if (m.type === 'modo' && m.modo !== 'quiz') location.replace('/' + location.search);
     };
     ws.onclose = (e) => {
       if (e.code === 4001) return status('chave inválida: use o link com ?k=');

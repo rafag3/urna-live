@@ -16,6 +16,10 @@
 <h1>Painel da Urna</h1>
 <div class="box"><div id="st">conectando…</div><div id="placar">—</div></div>
 <div class="box">
+  <div style="margin-bottom:8px">Jogo na tela (troca ao vivo):</div>
+  <div id="jogos"></div>
+</div>
+<div class="box">
   <div>Votos manuais: <input id="qtd" type="number" value="1" min="1" max="1000"></div>
   <div id="manuais"></div>
 </div>
@@ -33,6 +37,22 @@
     ws.onmessage = (e) => {
       const m = JSON.parse(e.data);
       if (m.type === 'status') $('st').textContent = 'TikTok: ' + m.conexao;
+      if (m.type === 'modo') {
+        const box = $('jogos'); box.replaceChildren();
+        Object.entries(m.jogos || {}).forEach(([k, nome]) => {
+          const b = document.createElement('button'); b.className = k === m.modo ? 'g' : 'n'; b.textContent = (k === m.modo ? '● ' : '') + nome;
+          b.onclick = () => { if (k !== m.modo && confirm('Trocar o jogo para ' + nome + '?')) ws.send(JSON.stringify({ cmd: 'jogo', modo: k })); };
+          box.appendChild(b);
+        });
+        return;
+      }
+      if (m.type === 'milhao') {
+        $('st').textContent = 'TikTok: ' + (m.conexao || '…') + ' · rodada ' + m.rodada + ' · ' + m.escada[m.degrau] + ' (' + m.fase + ')';
+        $('placar').textContent = (m.pergunta ? m.pergunta.pergunta : '') + '  —  vivos ' + m.vivos + ' · fora ' + m.eliminados;
+        $('manuais').textContent = 'Modo Milhão: votos manuais desativados.';
+        $('pular').style.display = '';
+        return;
+      }
       if (m.type === 'quiz') {
         $('st').textContent = 'TikTok: ' + (m.conexao || '…') + ' · pergunta ' + m.numero + ' (' + m.fase + ')';
         $('placar').textContent = (m.pergunta ? m.pergunta.afirmacao : '') + '  —  V ' + m.votos.V + ' x F ' + m.votos.F;
@@ -41,6 +61,7 @@
         return;
       }
       if (m.type !== 'state') return;
+      $('pular').style.display = 'none';
       $('st').textContent = 'TikTok: ' + m.conexao + ' · rodada ' + m.rodada;
       $('placar').textContent = m.config.opcoes.map((o) => `${o.nome}: ${m.votos[o.numero]}`).join('   ·   ');
       const box = $('manuais'); if (box.childElementCount) return;

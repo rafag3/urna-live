@@ -2,7 +2,14 @@
 
 Placar ao vivo entre dois números (padrão **13 x 22**). Comentário e presente da live viram voto, com a animação da urna digitando e confirmando cada voto.
 
-## Modo Quiz: Verdadeiro ou Falso (padrão atual)
+## Modo Rumo ao Milhão (eliminação)
+
+`"modo": "milhao"`. 10 perguntas A/B/C/D por rodada com escada de **pontos** (1 mil → 1 milhão). Errou, sai; não responder não elimina; dá para entrar até a 3ª pergunta. **Presente = vida extra** (até 3) ou **volta pro jogo** se eliminado. Fim de rodada mostra ganhadores ou quem chegou mais longe + hall da fama da live. Perguntas em `perguntas-milhao.json` (`nivel` 1 fácil, 2 médio, 3 difícil; `correta` = índice 0–3 — as alternativas são embaralhadas na tela).
+Arte: `public/img/milhao-cenario.jpg` (fundo) e `public/img/milhao-apresentador.png` (personagem recortado, animado por cima). Trilha de suspense original, sintetizada.
+
+**Troca de jogo ao vivo:** no painel (`/admin?k=...`) escolha Urna, Verdadeiro ou Falso ou Rumo ao Milhão — a tela da live troca sozinha. Ao reiniciar o servidor volta o `modo` do `config.json` (ou a variável `MODO` no Render).
+
+## Modo Quiz: Verdadeiro ou Falso
 
 `config.json` → `"modo": "quiz"` (ou `"urna"` para o jogo 13 x 22). No Render dá para trocar sem mexer no código com a variável `MODO`.
 

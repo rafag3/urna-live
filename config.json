@@ -1,5 +1,5 @@
 {
-  "modo": "quiz",
+  "modo": "milhao",
   "tiktokUsername": "mazzeldigital",
   "opcoes": [
     {
@@ -66,5 +66,13 @@
     "pontosAcerto": 10,
     "bonusPrimeiro": 5,
     "rodape": "Conteúdo educativo. Não substitui orientação de advogado ou planejador financeiro."
+  },
+  "milhao": {
+    "segundosPergunta": 15,
+    "segundosRevelacao": 6,
+    "segundosFimRodada": 12,
+    "entradaAtePergunta": 3,
+    "maxVidas": 3,
+    "rodape": "Prêmio simbólico em pontos. Conteúdo educativo, não substitui orientação profissional."
   }
 }

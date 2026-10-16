@@ -18,6 +18,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const { criarQuiz } = require('./quiz');
+const { criarMilhao } = require('./milhao');
 
 const ROOT = __dirname;
 const PUBLIC = path.join(ROOT, 'public');
@@ -70,10 +71,18 @@ function loadConfig() {
 let cfg = loadConfig();
 const numeros = () => cfg.opcoes.map((o) => o.numero);
 
-// ---------------------------------------------------------------- modo: urna (13 x 22) ou quiz (V/F)
-const MODO = String(process.env.MODO || cfg.modo || 'urna').toLowerCase() === 'quiz' ? 'quiz' : 'urna';
-const lerPerguntas = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'perguntas.json'), 'utf8'));
-let quiz = null; // criado depois do broadcast existir
+// ---------------------------------------------------------------- jogos: urna (13 x 22), quiz (V/F), milhao (eliminação)
+// Cada jogo além da urna é um "motor" com a mesma interface:
+//   comentario(user, texto) -> bool, presente(user, nome), snapshot(), reiniciar(), pular(), recarregarPerguntas(lista), parar()
+const lerJson = (arq) => JSON.parse(fs.readFileSync(path.join(ROOT, arq), 'utf8'));
+const JOGOS = {
+  urna: { pagina: '/index.html', nome: 'Urna 13 x 22' },
+  quiz: { pagina: '/quiz.html', nome: 'Verdadeiro ou Falso', criar: criarQuiz, perguntas: 'perguntas.json' },
+  milhao: { pagina: '/milhao.html', nome: 'Rumo ao Milhão', criar: criarMilhao, perguntas: 'perguntas-milhao.json' },
+};
+const normModo = (m) => (JOGOS[String(m || '').toLowerCase()] ? String(m).toLowerCase() : 'urna');
+let MODO = normModo(process.env.MODO || cfg.modo);
+let quiz = null; // motor ativo (null = urna)
 
 // ---------------------------------------------------------------- estado
 function freshState() {
@@ -123,7 +132,18 @@ function broadcast(msg) {
   const data = JSON.stringify(msg);
   for (const ws of clients) if (ws.readyState === 1) ws.send(data);
 }
-function snapshotAtual() { return quiz ? { ...quiz.snapshot(), conexao: conexaoStatus } : snapshot(); }
+function snapshotAtual() { return quiz ? { ...quiz.snapshot(), conexao: conexaoStatus, modo: MODO } : { ...snapshot(), modo: MODO }; }
+
+function ativarJogo(modo) {
+  modo = normModo(modo);
+  const def = JOGOS[modo];
+  if (quiz) { quiz.parar(); quiz = null; }
+  if (def.criar) quiz = def.criar({ broadcast, getCfg: () => cfg, perguntas: lerJson(def.perguntas) });
+  MODO = modo;
+  console.log(`[jogo] ${def.nome}${quiz ? ` (${quiz.total()} perguntas)` : ''}`);
+  broadcast({ type: 'modo', modo, jogos: Object.fromEntries(Object.entries(JOGOS).map(([k, v]) => [k, v.nome])) });
+  broadcast(snapshotAtual());
+}
 function snapshot() {
   const top = Object.entries(state.doadores)
     .map(([id, d]) => ({ id, ...d }))
@@ -315,7 +335,8 @@ function startSimulador() {
     const r = Math.random();
     if (r < 0.12) onEntrada(user);
     else if (r < 0.3) onCurtida(user, 1 + Math.floor(Math.random() * 6));
-    else if (quiz && r < 0.85) onComentario(user, ['V', 'F', 'verdadeiro', 'falso', 'v', 'f', 'sim', 'não'][Math.floor(Math.random() * 8)]);
+    else if (MODO === 'milhao' && r < 0.85) onComentario(user, ['A', 'B', 'C', 'D', 'b', 'letra c', '1', '4'][Math.floor(Math.random() * 8)]);
+    else if (MODO === 'quiz' && r < 0.85) onComentario(user, ['V', 'F', 'verdadeiro', 'falso', 'v', 'f', 'sim', 'não'][Math.floor(Math.random() * 8)]);
     else if (r < 0.8) {
       const n = numeros()[Math.random() < 0.55 ? 0 : 1];
       onComentario(user, Math.random() < 0.5 ? n : `vai ${n}!!`);
@@ -420,7 +441,7 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/ping') { res.writeHead(204); return res.end(); } // mantém o serviço acordado
-  const rotas = { '/': MODO === 'quiz' ? '/quiz.html' : '/index.html', '/admin': '/admin.html', '/urna': '/index.html', '/quiz': '/quiz.html' };
+  const rotas = { '/': JOGOS[MODO].pagina, '/admin': '/admin.html', '/urna': '/index.html', '/quiz': '/quiz.html', '/milhao': '/milhao.html' };
   let p = rotas[url.pathname] || url.pathname;
   const file = path.normalize(path.join(PUBLIC, p));
   if (!file.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }
@@ -442,18 +463,20 @@ wss.on('connection', (ws, req) => {
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return ws.close(4001, 'chave');
   }
   clients.add(ws);
+  ws.send(JSON.stringify({ type: 'modo', modo: MODO, jogos: Object.fromEntries(Object.entries(JOGOS).map(([k, v]) => [k, v.nome])) }));
   ws.send(JSON.stringify(snapshotAtual()));
   ws.on('close', () => clients.delete(ws));
   ws.on('message', (raw) => {
     let m; try { m = JSON.parse(raw); } catch { return; }
     if (m.cmd === 'reset') { if (quiz) quiz.reiniciar(); else reiniciar(); }
     else if (m.cmd === 'pular' && quiz) quiz.pular();
+    else if (m.cmd === 'jogo' && JOGOS[m.modo]) ativarJogo(m.modo);
     else if (m.cmd === 'manual' && numeros().includes(String(m.numero))) {
       registrarVoto({ id: 'admin', nick: 'Manual', avatar: '' }, String(m.numero), Math.max(1, Math.min(1000, Number(m.votos) || 1)), 'comentario');
     } else if (m.cmd === 'reload-config') {
       try {
         cfg = loadConfig();
-        if (quiz) quiz.recarregarPerguntas(lerPerguntas());
+        if (quiz) quiz.recarregarPerguntas(lerJson(JOGOS[MODO].perguntas));
         broadcast(snapshotAtual());
         console.log('[config] recarregado');
       }
@@ -467,10 +490,7 @@ function ipsLocais() {
     .filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i.address);
 }
 
-if (MODO === 'quiz') {
-  quiz = criarQuiz({ broadcast, getCfg: () => cfg, perguntas: lerPerguntas() });
-  console.log(`[quiz] ${quiz.total()} perguntas carregadas`);
-}
+ativarJogo(MODO);
 
 server.listen(PORT, HOST, () => {
   if (NUVEM) {
