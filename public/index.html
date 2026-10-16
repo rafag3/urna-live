@@ -606,11 +606,20 @@
   }
   const status = (s) => { $('status').textContent = s ? `● ${s}` : ''; };
 
+
+  // ---- recarrega sozinha quando o jogo muda ou sai versão nova do servidor
+  let versaoVista = null;
+  function checaModo(m, meu) {
+    if (m.versao) { if (versaoVista && m.versao !== versaoVista) return location.replace('/' + location.search); versaoVista = m.versao; }
+    if (m.modo && m.modo !== meu) location.replace('/' + location.search);
+  }
+
   function conectar() {
     const k = new URLSearchParams(location.search).get('k') || '';
     const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws${k ? '?k=' + encodeURIComponent(k) : ''}`);
     ws.onmessage = (e) => {
       let m; try { m = JSON.parse(e.data); } catch { return; }
+      if (m.type === 'quiz' || m.type === 'milhao') return location.replace('/' + location.search); // estado de outro jogo
       if (m.type === 'state') aplicarState(m);
       else if (m.type === 'voto') {
         combo(m.numero, m.combo); efeito(m.numero, !!m.presente, m.votos); enfileirar(m);
@@ -619,7 +628,7 @@
       else if (m.type === 'entrou') toast(`👋 @${m.user.nick} chegou! Comenta ${m.numeros.join(' ou ')}`, 'pend');
       else if (m.type === 'reset') { fila.length = 0; ocioso(); }
       else if (m.type === 'status') status(m.conexao);
-      else if (m.type === 'modo' && m.modo !== 'urna') location.replace('/' + location.search);
+      else if (m.type === 'modo') checaModo(m, 'urna');
     };
     ws.onclose = (e) => {
       if (e.code === 4001) return status('chave inválida: use o link com ?k= que aparece no terminal');

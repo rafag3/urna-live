@@ -24,6 +24,8 @@ const ROOT = __dirname;
 const PUBLIC = path.join(ROOT, 'public');
 const STATE_FILE = path.join(ROOT, 'state.json');
 const PORT = Number(process.env.PORT) || 3000;
+// versão do servidor: as telas abertas recarregam sozinhas quando ela muda (novo deploy)
+const VERSAO = String(process.env.RENDER_GIT_COMMIT || Date.now()).slice(0, 12);
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -141,7 +143,7 @@ function ativarJogo(modo) {
   if (def.criar) quiz = def.criar({ broadcast, getCfg: () => cfg, perguntas: lerJson(def.perguntas) });
   MODO = modo;
   console.log(`[jogo] ${def.nome}${quiz ? ` (${quiz.total()} perguntas)` : ''}`);
-  broadcast({ type: 'modo', modo, jogos: Object.fromEntries(Object.entries(JOGOS).map(([k, v]) => [k, v.nome])) });
+  broadcast({ type: 'modo', modo, versao: VERSAO, jogos: Object.fromEntries(Object.entries(JOGOS).map(([k, v]) => [k, v.nome])) });
   broadcast(snapshotAtual());
 }
 function snapshot() {
@@ -463,7 +465,7 @@ wss.on('connection', (ws, req) => {
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return ws.close(4001, 'chave');
   }
   clients.add(ws);
-  ws.send(JSON.stringify({ type: 'modo', modo: MODO, jogos: Object.fromEntries(Object.entries(JOGOS).map(([k, v]) => [k, v.nome])) }));
+  ws.send(JSON.stringify({ type: 'modo', modo: MODO, versao: VERSAO, jogos: Object.fromEntries(Object.entries(JOGOS).map(([k, v]) => [k, v.nome])) }));
   ws.send(JSON.stringify(snapshotAtual()));
   ws.on('close', () => clients.delete(ws));
   ws.on('message', (raw) => {

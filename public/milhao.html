@@ -408,17 +408,26 @@
 
   function status(s) { $('status').textContent = s ? `● ${s}` : ''; }
 
+
+  // ---- recarrega sozinha quando o jogo muda ou sai versão nova do servidor
+  let versaoVista = null;
+  function checaModo(m, meu) {
+    if (m.versao) { if (versaoVista && m.versao !== versaoVista) return location.replace('/' + location.search); versaoVista = m.versao; }
+    if (m.modo && m.modo !== meu) location.replace('/' + location.search);
+  }
+
   function conectar() {
     const k = new URLSearchParams(location.search).get('k') || '';
     const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws${k ? '?k=' + encodeURIComponent(k) : ''}`);
     ws.onmessage = (e) => {
       let m; try { m = JSON.parse(e.data); } catch { return; }
+      if (m.type === 'quiz' || m.type === 'state') return location.replace('/' + location.search); // estado de outro jogo
       if (m.type === 'milhao') aplicar(m);
       else if (m.type === 'resposta') resposta(m);
       else if (m.type === 'vida') vida(m);
       else if (m.type === 'entrou') toast(`👋 @${m.user.nick} chegou! Comenta A, B, C ou D`);
       else if (m.type === 'status') status(m.conexao);
-      else if (m.type === 'modo' && m.modo !== 'milhao') location.replace('/' + location.search);
+      else if (m.type === 'modo') checaModo(m, 'milhao');
     };
     ws.onclose = (e) => {
       if (e.code === 4001) return status('chave inválida: use o link com ?k=');
