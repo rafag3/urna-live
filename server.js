@@ -369,7 +369,7 @@ async function startTikTok(username) {
   const conectar = async () => {
     // enableExtendedGiftInfo baixa o catálogo de presentes por um endpoint que exige plano pago
     // do Euler Stream e derruba a conexão inteira. O nome do presente já vem em cada evento.
-    const conn = new TikTokLiveConnection(username, { enableExtendedGiftInfo: false, signApiKey: process.env.EULER_API_KEY || undefined });
+    const conn = new TikTokLiveConnection(username, { enableExtendedGiftInfo: false, processInitialData: false, signApiKey: process.env.EULER_API_KEY || undefined });
 
     conn.on(WebcastEvent.CHAT, (d) => onComentario(d.user, textoChat(d)));
     conn.on(WebcastEvent.LIKE, (d) => onCurtida(d.user, qtdCurtidas(d)));
