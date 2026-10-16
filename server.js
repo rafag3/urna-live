@@ -143,10 +143,13 @@ function snapshot() {
 }
 
 // ---------------------------------------------------------------- regras
-function sanitizeUser(u = {}) {
-  const id = String(u.uniqueId || u.id || 'anon').slice(0, 40);
-  const nick = String(u.nickname || id).slice(0, 32);
-  let avatar = u.avatar || u.profilePicture?.url?.[0] || u.profilePictureUrl || '';
+// campos da v3 do protocolo (displayId, avatarThumb.urlList) com fallback para os nomes antigos
+function sanitizeUser(u) {
+  u = u || {};
+  const id = String(u.uniqueId || u.displayId || u.id || u.userId || 'anon').slice(0, 40);
+  const nick = String(u.nickname || u.displayId || u.uniqueId || id).slice(0, 32);
+  let avatar = u.avatar || u.avatarThumb?.urlList?.[0] || u.avatarMedium?.urlList?.[0]
+    || u.profilePicture?.url?.[0] || u.profilePictureUrl || '';
   if (typeof avatar !== 'string' || !/^https:\/\//.test(avatar)) avatar = '';
   return { id, nick, avatar };
 }
@@ -182,6 +185,14 @@ function registrarVoto(user, numero, votos, origem, presente) {
   broadcast({ type: 'voto', numero, votos, origem, presente: presente || null, user, combo, mult });
   broadcast(snapshot());
 }
+
+const textoChat = (d) => d.content ?? d.comment ?? '';
+const qtdCurtidas = (d) => d.likeCount ?? d.count ?? 1;
+const infoPresente = (d) => ({
+  tipo: d.giftDetails?.giftType ?? d.gift?.type,
+  nome: d.giftDetails?.giftName || d.gift?.name || String(d.giftId),
+  diamantes: d.giftDetails?.diamondCount || d.gift?.diamondCount || 0,
+});
 
 function onComentario(rawUser, texto) {
   const user = sanitizeUser(rawUser);
@@ -328,15 +339,14 @@ function startEuler(username, apiKey) {
       for (const m of lista) {
         const t = m && m.type, d = (m && m.data) || {};
         if (primeiros < 15) { primeiros++; console.log(`[euler] evento: ${t}`); }
-        if (t === 'WebcastChatMessage') onComentario(d.user, d.comment);
-        else if (t === 'WebcastLikeMessage') onCurtida(d.user, d.likeCount ?? d.count);
+        if (t === 'WebcastChatMessage') onComentario(d.user, textoChat(d));
+        else if (t === 'WebcastLikeMessage') onCurtida(d.user, qtdCurtidas(d));
         else if (t === 'WebcastMemberMessage' || t === 'SyntheticJoinMessage') onEntrada(d.user);
         else if (t === 'WebcastGiftMessage') {
-          const tipo = d.giftDetails?.giftType ?? d.gift?.type;
-          if (tipo === 1 && !d.repeatEnd) continue; // sequência em andamento: conta só no fim
-          const nome = d.giftDetails?.giftName || d.gift?.name || String(d.giftId);
-          console.log(`[presente] ${d.user?.uniqueId} -> "${nome}" x${d.repeatCount || 1}`);
-          onPresente(d.user, { nome, repeticoes: d.repeatCount || 1, diamantes: d.giftDetails?.diamondCount || d.gift?.diamondCount || 0 });
+          const g = infoPresente(d);
+          if (g.tipo === 1 && !d.repeatEnd) continue; // sequência em andamento: conta só no fim
+          console.log(`[presente] ${sanitizeUser(d.user).id} -> "${g.nome}" x${d.repeatCount || 1} (${g.diamantes} diamantes)`);
+          onPresente(d.user, { nome: g.nome, repeticoes: d.repeatCount || 1, diamantes: g.diamantes });
         } else if (t === 'tiktok.disconnect') console.log('[euler] TikTok desconectou:', d.reason);
       }
     });
@@ -361,18 +371,14 @@ async function startTikTok(username) {
     // do Euler Stream e derruba a conexão inteira. O nome do presente já vem em cada evento.
     const conn = new TikTokLiveConnection(username, { enableExtendedGiftInfo: false, signApiKey: process.env.EULER_API_KEY || undefined });
 
-    conn.on(WebcastEvent.CHAT, (d) => onComentario(d.user, d.comment));
-    conn.on(WebcastEvent.LIKE, (d) => onCurtida(d.user, d.likeCount));
+    conn.on(WebcastEvent.CHAT, (d) => onComentario(d.user, textoChat(d)));
+    conn.on(WebcastEvent.LIKE, (d) => onCurtida(d.user, qtdCurtidas(d)));
     conn.on(WebcastEvent.MEMBER, (d) => onEntrada(d.user));
     conn.on(WebcastEvent.GIFT, (d) => {
-      const tipo = d.giftDetails?.giftType;
-      if (tipo === 1 && !d.repeatEnd) return; // sequência em andamento: conta só no fim
-      console.log(`[presente] ${d.user?.uniqueId} -> "${d.giftDetails?.giftName}" x${d.repeatCount || 1} (${d.giftDetails?.diamondCount || 0} diamantes)`);
-      onPresente(d.user, {
-        nome: d.giftDetails?.giftName || String(d.giftId),
-        repeticoes: d.repeatCount || 1,
-        diamantes: d.giftDetails?.diamondCount || 0,
-      });
+      const g = infoPresente(d);
+      if (g.tipo === 1 && !d.repeatEnd) return; // sequência em andamento: conta só no fim
+      console.log(`[presente] ${sanitizeUser(d.user).id} -> "${g.nome}" x${d.repeatCount || 1} (${g.diamantes} diamantes)`);
+      onPresente(d.user, { nome: g.nome, repeticoes: d.repeatCount || 1, diamantes: g.diamantes });
     });
     conn.on(WebcastEvent.STREAM_END, () => { setStatus('live encerrada'); agendar(); });
     conn.on(ControlEvent.DISCONNECTED, () => { setStatus('desconectado'); agendar(); });
