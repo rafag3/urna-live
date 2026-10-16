@@ -155,6 +155,39 @@
     -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14%,#000 78%,transparent 100%);
             mask-image:linear-gradient(to bottom,transparent 0,#000 14%,#000 78%,transparent 100%)}
   .char.bump img{transform:scale(1.03)}
+
+  /* ---- animação dos personagens ---- */
+  .chars{overflow:visible}
+  .char{transform-origin:center bottom;transition:transform .6s cubic-bezier(.2,.8,.2,1), filter .6s;z-index:1}
+  .char img{animation:respira 3.2s ease-in-out infinite}
+  .char.B img{animation-delay:-1.6s}
+  @keyframes respira{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-12px) scale(1.02)}}
+  .char::before{content:"";position:absolute;left:8%;right:8%;top:5%;bottom:-5%;border-radius:50%;z-index:-1;opacity:0;transition:opacity .6s}
+  .char.A::before{background:radial-gradient(circle,var(--a) 0%,transparent 68%)}
+  .char.B::before{background:radial-gradient(circle,var(--b) 0%,transparent 68%)}
+  .char.lider{transform:scale(1.07);filter:saturate(1.25) brightness(1.08);z-index:2}
+  .char.lider::before{opacity:.75;animation:brilho 1.4s ease-in-out infinite}
+  .char.perde{transform:scale(.93);filter:saturate(.55) brightness(.75)}
+  @keyframes brilho{50%{opacity:.35;transform:scale(1.08)}}
+  .char.hit{animation:tranco .4s ease-out}
+  .char.hitG{animation:tranco .4s ease-out 2}
+  @keyframes tranco{0%{translate:0 0;rotate:0deg}20%{translate:-12px -18px;rotate:-2.5deg}45%{translate:10px -6px;rotate:2deg}70%{translate:-4px 0;rotate:-.8deg}100%{translate:0 0;rotate:0deg}}
+  .fx{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+  .pt{position:absolute;font-size:64px;line-height:1;will-change:transform,opacity;animation:voa var(--d,1.2s) cubic-bezier(.15,.7,.3,1) forwards}
+  .pt.c{width:20px;height:30px;border-radius:4px;font-size:0}
+  @keyframes voa{0%{opacity:1;transform:translate(0,0) rotate(0) scale(.6)}15%{transform:translate(calc(var(--x)*.3),calc(var(--y)*.3)) rotate(calc(var(--r)*.3)) scale(1.1)}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(.9)}}
+  .flash{position:absolute;top:0;bottom:42%;width:50%;opacity:0;pointer-events:none;z-index:3;mix-blend-mode:screen}
+  .flash.A{left:0;background:radial-gradient(circle at 50% 45%,#fff 0%,var(--a) 35%,transparent 70%)}
+  .flash.B{right:0;background:radial-gradient(circle at 50% 45%,#fff 0%,var(--b) 35%,transparent 70%)}
+  .flash.on{animation:flash .6s ease-out}
+  @keyframes flash{0%{opacity:.85}100%{opacity:0}}
+
+  .char.A img{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14%,#000 78%,transparent 100%),linear-gradient(to right,#000 82%,transparent 100%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 14%,#000 78%,transparent 100%),linear-gradient(to right,#000 82%,transparent 100%);
+    -webkit-mask-composite:source-in;mask-composite:intersect}
+  .char.B img{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14%,#000 78%,transparent 100%),linear-gradient(to left,#000 82%,transparent 100%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 14%,#000 78%,transparent 100%),linear-gradient(to left,#000 82%,transparent 100%);
+    -webkit-mask-composite:source-in;mask-composite:intersect}
 </style>
 </head>
 <body>
@@ -169,6 +202,7 @@
     </div>
 
     <div class="chars"><div class="char A" id="charA"></div><div class="char B" id="charB"></div></div>
+    <div class="flash A" id="flashA"></div><div class="flash B" id="flashB"></div>
 
     <div class="placar">
       <div class="lado A"><div class="pct" id="pctA">50%</div><div class="votos stroke" id="numA"></div><div class="combo stroke" id="comboA"></div></div>
@@ -202,6 +236,7 @@
     </div>
   </div>
 
+  <div class="fx" id="fx"></div>
   <div class="toasts" id="toasts"></div>
   <div class="venc" id="venc"><div class="t1">FIM DA RODADA</div><div class="t2 stroke" id="vencNome"></div><div class="t3" id="vencPlacar"></div></div>
   <div class="status" id="status"></div>
@@ -304,6 +339,8 @@
     $('pctA').textContent = ia + '%'; $('pctB').textContent = (100 - ia) + '%';
     $('fill').style.width = pa + '%';
     $('eqA').classList.toggle('lidera', va > vb); $('eqB').classList.toggle('lidera', vb > va);
+    $('charA').classList.toggle('lider', va > vb); $('charA').classList.toggle('perde', va < vb);
+    $('charB').classList.toggle('lider', vb > va); $('charB').classList.toggle('perde', vb < va);
 
     fimEm = s.rodadaFimEm;
     mostrarVencedor(s.vencedor, va, vb);
@@ -315,8 +352,8 @@
     if (el.dataset.v === String(v)) return;
     el.dataset.v = String(v); el.textContent = txt;
     const pct = $(id === 'numA' ? 'pctA' : 'pctB');
-    pct.classList.add('bump'); $(charId).classList.add('bump');
-    setTimeout(() => { pct.classList.remove('bump'); $(charId).classList.remove('bump'); }, 180);
+    pct.classList.add('bump');
+    setTimeout(() => pct.classList.remove('bump'), 180);
   }
 
   // ---- timer + multiplicador final
@@ -396,6 +433,41 @@
     await t(600);
   }
 
+
+  // ---- efeitos: tranco no personagem + partículas (+ flash em presente)
+  const emojiLado = (L) => {
+    const n = nums[L === 'A' ? 0 : 1];
+    const g = Object.values(presentes).find((r) => String(r.numero) === n);
+    return (g && g.icone) || '⭐';
+  };
+  let fxVivos = 0;
+  function efeito(numero, presente, votos) {
+    const L = side(numero), ch = $('char' + L);
+    const cls = presente ? 'hitG' : 'hit';
+    ch.classList.remove('hit', 'hitG'); void ch.offsetWidth; ch.classList.add(cls);
+    if (presente) { const f = $('flash' + L); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); }
+    const qtd = presente ? Math.min(28, 10 + votos * 2) : 6;
+    if (fxVivos > 120) return; // protege celular fraco em chuva de votos
+    const cor = getComputedStyle(document.documentElement).getPropertyValue(L === 'A' ? '--a' : '--b').trim();
+    const ox = L === 'A' ? 270 : 810, oy = 640;
+    for (let i = 0; i < qtd; i++) {
+      const p = document.createElement('div');
+      const confete = i % 2 === 1;
+      p.className = 'pt' + (confete ? ' c' : '');
+      if (confete) p.style.background = i % 4 === 1 ? cor : '#ffd23f';
+      else p.textContent = emojiLado(L);
+      const ang = (-90 + (Math.random() * 140 - 70)) * Math.PI / 180, dist = 260 + Math.random() * (presente ? 420 : 220);
+      p.style.left = ox + (Math.random() * 120 - 60) + 'px'; p.style.top = oy + 'px';
+      p.style.setProperty('--x', Math.cos(ang) * dist + 'px');
+      p.style.setProperty('--y', Math.sin(ang) * dist + 'px');
+      p.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+      p.style.setProperty('--d', (0.9 + Math.random() * 0.7) + 's');
+      fxVivos++;
+      p.addEventListener('animationend', () => { p.remove(); fxVivos--; }, { once: true });
+      $('fx').appendChild(p);
+    }
+  }
+
   let vencMostrado = null;
   function mostrarVencedor(venc, va, vb) {
     const el = $('venc');
@@ -415,7 +487,7 @@
       let m; try { m = JSON.parse(e.data); } catch { return; }
       if (m.type === 'state') aplicarState(m);
       else if (m.type === 'voto') {
-        combo(m.numero, m.combo); enfileirar(m);
+        combo(m.numero, m.combo); efeito(m.numero, !!m.presente, m.votos); enfileirar(m);
         if (m.presente) toast(`@${m.user.nick} ${icone(m.presente)} +${m.votos} PRO ${m.numero}!`);
       } else if (m.type === 'pendente') toast(`@${m.user.nick} mandou ${icone(m.presente)}! Digite ${m.numeros.join(' ou ')}`, 'pend');
       else if (m.type === 'reset') { fila.length = 0; ocioso(); }

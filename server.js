@@ -267,16 +267,19 @@ async function startTikTok(username) {
   const { TikTokLiveConnection, WebcastEvent, ControlEvent } = require('tiktok-live-connector');
   let tentativa = 0;
   const conectar = async () => {
-    const conn = new TikTokLiveConnection(username, { enableExtendedGiftInfo: true });
+    // enableExtendedGiftInfo baixa o catálogo de presentes por um endpoint que exige plano pago
+    // do Euler Stream e derruba a conexão inteira. O nome do presente já vem em cada evento.
+    const conn = new TikTokLiveConnection(username, { enableExtendedGiftInfo: false });
 
     conn.on(WebcastEvent.CHAT, (d) => onComentario(d.user, d.comment));
     conn.on(WebcastEvent.GIFT, (d) => {
       const tipo = d.giftDetails?.giftType;
       if (tipo === 1 && !d.repeatEnd) return; // sequência em andamento: conta só no fim
+      console.log(`[presente] ${d.user?.uniqueId} -> "${d.giftDetails?.giftName}" x${d.repeatCount || 1} (${d.giftDetails?.diamondCount || 0} diamantes)`);
       onPresente(d.user, {
-        nome: d.giftDetails?.giftName || d.extendedGiftInfo?.name || String(d.giftId),
+        nome: d.giftDetails?.giftName || String(d.giftId),
         repeticoes: d.repeatCount || 1,
-        diamantes: d.giftDetails?.diamondCount || d.extendedGiftInfo?.diamond_count || 0,
+        diamantes: d.giftDetails?.diamondCount || 0,
       });
     });
     conn.on(WebcastEvent.STREAM_END, () => { setStatus('live encerrada'); agendar(); });
