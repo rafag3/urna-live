@@ -100,6 +100,16 @@ const ultimoNumero = new Map(); // uniqueId -> numero escolhido no chat
 const ultimoVotoComentario = new Map(); // uniqueId -> timestamp
 const pendentes = new Map(); // uniqueId -> { votos, presente, expira } (presente sem time)
 const combos = new Map(); // numero -> { count, ate }
+const curtidasAcum = new Map(); // uniqueId -> curtidas ainda não convertidas em voto
+
+// diagnóstico: o que chegou da live no último minuto
+const stats = { chat: 0, curtidas: 0, entradas: 0, presentes: 0, votos: 0 };
+let chatsLogados = 0;
+setInterval(() => {
+  if (!/^conectado/.test(conexaoStatus)) return;
+  console.log(`[stats/min] comentarios=${stats.chat} curtidas=${stats.curtidas} entradas=${stats.entradas} presentes=${stats.presentes} votos=${stats.votos}`);
+  for (const k in stats) stats[k] = 0;
+}, 60000);
 
 // ---------------------------------------------------------------- broadcast
 const clients = new Set();
@@ -120,6 +130,7 @@ function snapshot() {
       multiplicadorFinal: cfg.multiplicadorFinal || null,
       fundo: cfg.fundo || '',
       mostrarTotalDeVotos: cfg.mostrarTotalDeVotos !== false,
+      musica: cfg.musica || { habilitada: true, volume: 0.35 },
     },
     votos: state.votos,
     top,
@@ -153,6 +164,7 @@ function registrarVoto(user, numero, votos, origem, presente) {
   const mult = multiplicadorAtual();
   votos = Math.round(votos * mult);
   state.votos[numero] += votos;
+  stats.votos += votos;
   dirty = true;
 
   const d = (state.doadores[user.id] ||= { nick: user.nick, avatar: user.avatar, votos: 0, numero });
@@ -160,7 +172,7 @@ function registrarVoto(user, numero, votos, origem, presente) {
   d.avatar = user.avatar || d.avatar;
   d.numero = numero;
   if (origem === 'presente') d.votos += votos;
-  if (origem === 'comentario' && !d.votos) delete state.doadores[user.id]; // ranking só de presente
+  if (origem !== 'presente' && !d.votos) delete state.doadores[user.id]; // ranking só de presente
 
   const now = Date.now();
   const c = combos.get(numero);
@@ -173,6 +185,8 @@ function registrarVoto(user, numero, votos, origem, presente) {
 
 function onComentario(rawUser, texto) {
   const user = sanitizeUser(rawUser);
+  stats.chat++;
+  if (chatsLogados < 40) { chatsLogados++; console.log(`[chat] @${user.id}: ${String(texto || '').slice(0, 80)}`); }
   const m = String(texto || '').match(/\b(\d{1,5})\b/);
   if (!m || !numeros().includes(m[1])) return;
   const numero = m[1];
@@ -193,6 +207,7 @@ function onComentario(rawUser, texto) {
 }
 
 function onPresente(rawUser, { nome, repeticoes, diamantes }) {
+  stats.presentes++;
   const user = sanitizeUser(rawUser);
   const regra = cfg.presentes[nome];
   const unit = regra ? regra.votos : (diamantes || 0) * (cfg.votosPorDiamanteParaPresentesNaoMapeados || 0);
@@ -210,6 +225,30 @@ function onPresente(rawUser, { nome, repeticoes, diamantes }) {
     expira: Date.now() + 120000,
   });
   broadcast({ type: 'pendente', user, presente: nome, votos, numeros: numeros() });
+}
+
+function onCurtida(rawUser, qtd) {
+  const c = cfg.curtidas || {};
+  const n = Math.max(1, Number(qtd) || 1);
+  stats.curtidas += n;
+  if (c.habilitado === false) return;
+  const user = sanitizeUser(rawUser);
+  const numero = ultimoNumero.get(user.id);
+  if (!numero) return; // curtida só vale para quem já escolheu o time no chat
+  const por = Math.max(1, Number(c.curtidasPorVoto) || 5);
+  const total = (curtidasAcum.get(user.id) || 0) + n;
+  const votos = Math.floor(total / por);
+  curtidasAcum.set(user.id, total % por);
+  if (votos > 0) registrarVoto(user, numero, votos, 'curtida');
+}
+
+let ultimaEntrada = 0;
+function onEntrada(rawUser) {
+  stats.entradas++;
+  const now = Date.now();
+  if (now - ultimaEntrada < 4000) return; // no máximo um aviso a cada 4 s
+  ultimaEntrada = now;
+  broadcast({ type: 'entrou', user: sanitizeUser(rawUser), numeros: numeros() });
 }
 
 function reiniciar() {
@@ -254,7 +293,9 @@ function startSimulador() {
     const u = nomes[Math.floor(Math.random() * nomes.length)];
     const user = { uniqueId: u, nickname: u };
     const r = Math.random();
-    if (r < 0.65) {
+    if (r < 0.12) onEntrada(user);
+    else if (r < 0.3) onCurtida(user, 1 + Math.floor(Math.random() * 6));
+    else if (r < 0.8) {
       const n = numeros()[Math.random() < 0.55 ? 0 : 1];
       onComentario(user, Math.random() < 0.5 ? n : `vai ${n}!!`);
     } else if (gifts.length) {
@@ -272,6 +313,8 @@ async function startTikTok(username) {
     const conn = new TikTokLiveConnection(username, { enableExtendedGiftInfo: false });
 
     conn.on(WebcastEvent.CHAT, (d) => onComentario(d.user, d.comment));
+    conn.on(WebcastEvent.LIKE, (d) => onCurtida(d.user, d.likeCount));
+    conn.on(WebcastEvent.MEMBER, (d) => onEntrada(d.user));
     conn.on(WebcastEvent.GIFT, (d) => {
       const tipo = d.giftDetails?.giftType;
       if (tipo === 1 && !d.repeatEnd) return; // sequência em andamento: conta só no fim
@@ -290,6 +333,7 @@ async function startTikTok(username) {
       setStatus(`conectando em @${username}…`);
       await conn.connect();
       tentativa = 0;
+      chatsLogados = 0;
       setStatus(`conectado @${username}`);
     } catch (e) {
       console.error('[tiktok] falha ao conectar:', e?.message || e);

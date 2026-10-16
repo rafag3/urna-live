@@ -49,5 +49,13 @@
   },
   "comboJanelaSegundos": 8,
   "fundo": "",
-  "mostrarTotalDeVotos": true
+  "mostrarTotalDeVotos": true,
+  "curtidas": {
+    "habilitado": true,
+    "curtidasPorVoto": 5
+  },
+  "musica": {
+    "habilitada": true,
+    "volume": 0.35
+  }
 }
