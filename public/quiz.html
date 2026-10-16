@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Verdadeiro ou Falso</title>
+<style>
+  @font-face{font-family:"Bebas Neue";src:url(fonts/bebas-neue-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:block}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:block}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:block}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-900-normal.woff2) format("woff2");font-weight:900;font-display:block}
+
+  :root{
+    --v:#1fd65f; --f:#ff3b4a; --ink:#fff; --gold:#ffd23f;
+    /* tema (trocado por categoria) */
+    --bg1:#081a44; --bg2:#123a8c; --acc:#ffc233; --acc2:#5aa9ff; --card:#ffffff; --cardInk:#0b1630;
+  }
+  .tema-financas{ --bg1:#052a1e; --bg2:#0b6b45; --acc:#f5c542; --acc2:#7cf0b0; --cardInk:#082a1c; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Inter,system-ui,sans-serif;color:var(--ink)}
+  #stage{position:absolute;left:50%;top:50%;width:1080px;height:1920px;transform-origin:center;overflow:hidden;
+    background:radial-gradient(120% 70% at 50% 18%, var(--bg2) 0%, var(--bg1) 70%); transition:background .6s}
+  .bebas{font-family:"Bebas Neue",Impact,"Arial Narrow",sans-serif;font-weight:400;letter-spacing:1px}
+  .stroke{-webkit-text-stroke:8px #000;paint-order:stroke fill}
+
+  /* padrões de fundo por tema */
+  .padrao{position:absolute;inset:0;opacity:.13;pointer-events:none;transition:opacity .6s}
+  .tema-trabalhista .padrao{background:
+    repeating-linear-gradient(0deg, transparent 0 58px, rgba(255,255,255,.55) 58px 60px),
+    repeating-linear-gradient(90deg, transparent 0 58px, rgba(255,255,255,.25) 58px 60px)}
+  .tema-financas .padrao{background:
+    radial-gradient(circle at 20px 20px, rgba(255,215,90,.9) 0 9px, transparent 10px) 0 0/80px 80px,
+    radial-gradient(circle at 60px 60px, rgba(255,255,255,.5) 0 5px, transparent 6px) 0 0/80px 80px}
+  .raios{position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 38%, rgba(255,255,255,.06) 0 5deg, transparent 5deg 15deg);animation:gira 60s linear infinite}
+  @keyframes gira{to{transform:rotate(360deg)}}
+
+  /* topo */
+  .topo{position:absolute;top:120px;left:60px;right:60px;display:flex;align-items:center;justify-content:space-between}
+  .tag{display:inline-flex;align-items:center;gap:14px;padding:10px 26px;border-radius:999px;background:var(--acc);color:#111;font-weight:900;font-size:30px;letter-spacing:.5px;box-shadow:0 6px 0 rgba(0,0,0,.35)}
+  .num{font-size:56px;color:var(--acc)}
+  .relogio{position:relative;width:170px;height:170px}
+  .relogio svg{transform:rotate(-90deg)}
+  .relogio .t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:92px}
+  .relogio.urg .t{color:var(--f);animation:pulsa .5s infinite}
+  @keyframes pulsa{50%{transform:scale(1.12)}}
+  .titulo{position:absolute;top:310px;left:0;right:0;text-align:center;font-size:96px;line-height:.9;color:#fff}
+  .titulo b{color:var(--v);font-weight:400} .titulo i{color:var(--f);font-style:normal}
+
+  /* área da pergunta (3 variações) */
+  .area{position:absolute;top:430px;left:50px;right:50px;height:620px;display:flex;align-items:center;justify-content:center}
+  .q{position:relative;width:100%;transition:transform .5s cubic-bezier(.2,.9,.2,1.2),opacity .3s}
+  .q.entra{animation:entra .6s cubic-bezier(.2,.9,.2,1.15)}
+  @keyframes entra{0%{opacity:0;transform:translateY(60px) scale(.9) rotate(-2deg)}100%{opacity:1;transform:none}}
+  .q .emoji{font-size:150px;line-height:1;filter:drop-shadow(0 10px 0 rgba(0,0,0,.3))}
+  .q .txt{font-weight:900;line-height:1.12;color:var(--cardInk)}
+
+  /* var 0: cartão */
+  .var-0 .q{background:var(--card);border-radius:44px;padding:110px 60px 60px;text-align:center;border:10px solid #000;box-shadow:0 18px 0 rgba(0,0,0,.35)}
+  .var-0 .q .emoji{position:absolute;left:50%;top:-95px;transform:translateX(-50%);width:190px;height:190px;border-radius:50%;background:var(--acc);border:10px solid #000;display:flex;align-items:center;justify-content:center;font-size:110px}
+  /* var 1: balão de fala */
+  .var-1 .q{display:grid;grid-template-columns:230px 1fr;align-items:center;gap:30px}
+  .var-1 .q .emoji{width:230px;height:230px;border-radius:50%;background:var(--acc2);border:10px solid #000;display:flex;align-items:center;justify-content:center;font-size:130px;box-shadow:0 14px 0 rgba(0,0,0,.3)}
+  .var-1 .q .bal{position:relative;background:var(--card);border:10px solid #000;border-radius:40px;padding:50px 44px;box-shadow:0 16px 0 rgba(0,0,0,.35)}
+  .var-1 .q .bal::before{content:"";position:absolute;left:-46px;top:50%;margin-top:-30px;border:30px solid transparent;border-right:40px solid #000}
+  .var-1 .q .bal::after{content:"";position:absolute;left:-26px;top:50%;margin-top:-20px;border:20px solid transparent;border-right:28px solid var(--card)}
+  /* var 2: manchete */
+  .var-2 .q{background:#f4efe1;border:10px solid #000;border-radius:16px;padding:0 0 50px;text-align:left;box-shadow:0 16px 0 rgba(0,0,0,.35);transform:rotate(-1.2deg)}
+  .var-2 .q .faixa{background:#111;color:#fff;font-size:58px;padding:14px 40px;display:flex;justify-content:space-between;align-items:center;border-bottom:8px solid var(--acc)}
+  .var-2 .q .faixa b{color:var(--acc);font-weight:400}
+  .var-2 .q .corpo{display:flex;gap:30px;align-items:center;padding:44px 44px 0}
+  .var-2 .q .emoji{font-size:140px}
+  .var-2 .q .txt{color:#111;font-family:Georgia,"Times New Roman",serif;font-weight:900}
+  .var-2 .q > .emoji{display:none}
+  .q .mostra-0,.q .mostra-1,.q .mostra-2{display:none}
+  .var-0 .q .mostra-0,.var-1 .q .mostra-1,.var-2 .q .mostra-2{display:block}
+  .var-1 .q .mostra-1{display:contents}
+  .var-2 .q .mostra-2{display:block}
+
+  /* revelação */
+  .rev{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;opacity:0;pointer-events:none;z-index:5}
+  .rev.on{opacity:1}
+  .carimbo{font-size:128px;line-height:.9;white-space:nowrap;padding:16px 46px 4px;border-radius:30px;border:14px solid currentColor;background:rgba(0,0,0,.82);transform:rotate(-6deg);animation:carimbo .5s cubic-bezier(.2,1.6,.4,1)}
+  .carimbo.V{color:var(--v)} .carimbo.F{color:var(--f)}
+  @keyframes carimbo{0%{transform:rotate(-6deg) scale(2.6);opacity:0}100%{transform:rotate(-6deg) scale(1);opacity:1}}
+  .explica{max-width:900px;text-align:center;font-weight:800;font-size:44px;line-height:1.2;background:rgba(0,0,0,.82);padding:22px 34px;border-radius:26px;border:5px solid var(--acc)}
+  .q.apaga{opacity:.15;transform:scale(.94)}
+
+  /* respostas */
+  .cta{position:absolute;top:1080px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:66px;padding:10px 40px 4px;border-radius:999px;background:var(--gold);color:#111;border:7px solid #000;box-shadow:0 10px 0 rgba(0,0,0,.35);animation:cta 1.4s ease-in-out infinite}
+  .cta b{font-weight:400;color:#fff;padding:0 14px;border-radius:12px;-webkit-text-stroke:0}
+  .cta b.V{background:var(--v)} .cta b.F{background:var(--f)}
+  @keyframes cta{50%{transform:translateX(-50%) scale(1.06)}}
+  .cta.some{opacity:0;animation:none}
+  .botoes{position:absolute;top:1210px;left:50px;right:50px;display:grid;grid-template-columns:1fr 1fr;gap:30px}
+  .bt{border:9px solid #000;border-radius:34px;padding:16px 10px 10px;text-align:center;box-shadow:0 12px 0 rgba(0,0,0,.4);transition:transform .15s, filter .3s, opacity .3s}
+  .bt .l{font-size:120px;line-height:.85} .bt .s{font-size:44px;line-height:1} .bt .p{font-family:Inter;font-weight:900;font-size:64px;line-height:1.1}
+  .bt.V{background:var(--v);color:#04260f} .bt.F{background:var(--f);color:#2b0005}
+  .bt.bump{transform:scale(1.06) rotate(-1deg)}
+  .bt.certo{transform:scale(1.07);box-shadow:0 0 0 10px #fff,0 0 60px 10px currentColor}
+  .bt.errado{filter:grayscale(1) brightness(.5);opacity:.55}
+  .barra{position:absolute;top:1505px;left:60px;right:60px;height:46px;border-radius:999px;background:var(--f);border:7px solid #000;overflow:hidden}
+  .barra .fill{position:absolute;inset:0 auto 0 0;width:50%;background:var(--v);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+  .barra .fill::after{content:"";position:absolute;right:-4px;top:0;bottom:0;width:8px;background:#fff}
+  .info{position:absolute;top:1566px;left:60px;right:60px;display:flex;justify-content:space-between;font-weight:800;font-size:30px;color:rgba(255,255,255,.9);text-shadow:0 2px 0 #000}
+  .feed{position:absolute;top:1615px;left:0;right:0;height:70px;display:flex;justify-content:center;gap:12px;overflow:hidden}
+  .chip{display:flex;align-items:center;gap:10px;padding:6px 16px 6px 6px;border-radius:999px;background:rgba(0,0,0,.55);border:3px solid rgba(255,255,255,.25);font-weight:800;font-size:24px;animation:chip .35s ease-out;max-width:300px;white-space:nowrap}
+  .chip img,.chip .av{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#555;flex:none}
+  .chip .r{font-family:"Bebas Neue",Impact,sans-serif;font-size:34px;padding:0 10px;border-radius:8px;color:#fff}
+  .chip .r.V{background:var(--v)} .chip .r.F{background:var(--f)}
+  .chip .n{overflow:hidden;text-overflow:ellipsis}
+  @keyframes chip{from{opacity:0;transform:translateY(30px)}}
+
+  /* rodapé: top 3 + regras */
+  .rodape{position:absolute;left:40px;right:40px;bottom:40px;display:flex;flex-direction:column;gap:12px}
+  .top3{display:flex;gap:12px;justify-content:center}
+  .tp{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.5);border-radius:999px;padding:6px 18px 6px 6px;font-weight:800;font-size:26px;max-width:330px;white-space:nowrap;overflow:hidden}
+  .tp img,.tp .av{width:48px;height:48px;border-radius:50%;object-fit:cover;background:#555;flex:none}
+  .tp .n{overflow:hidden;text-overflow:ellipsis} .tp b{color:var(--gold)}
+  .regras{text-align:center;font-weight:800;font-size:25px;color:rgba(255,255,255,.92);text-shadow:0 2px 0 #000}
+  .legal{text-align:center;font-weight:600;font-size:21px;color:rgba(255,255,255,.6)}
+
+  /* ranking (tela cheia) */
+  .ranking{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:rgba(4,8,20,.95)}
+  .ranking.on{display:flex;animation:entra .5s}
+  .ranking h2{font-size:120px;color:var(--gold);line-height:.9}
+  .ranking .sub{font-weight:800;font-size:34px;color:rgba(255,255,255,.8);margin-bottom:12px}
+  .rk{display:flex;align-items:center;gap:22px;width:860px;padding:14px 28px;border-radius:28px;background:rgba(255,255,255,.08);border:4px solid rgba(255,255,255,.15);font-weight:900;font-size:44px}
+  .rk:first-of-type{background:linear-gradient(90deg,rgba(255,210,63,.35),rgba(255,210,63,.08));border-color:var(--gold)}
+  .rk .pos{font-size:64px;width:90px;text-align:center}
+  .rk img,.rk .av{width:90px;height:90px;border-radius:50%;object-fit:cover;background:#555;flex:none;border:4px solid #fff}
+  .rk .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rk .pt{color:var(--gold)}
+
+  .toasts{position:absolute;left:0;right:0;top:1618px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:9;pointer-events:none}
+  .toast{font-family:"Bebas Neue",Impact,sans-serif;font-size:42px;padding:6px 26px 0;border-radius:18px;background:var(--gold);color:#111;border:6px solid #000;animation:toast 2.8s forwards;max-width:980px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .toast.br{background:#fff}
+  @keyframes toast{0%{opacity:0;transform:scale(.6)}10%{opacity:1;transform:scale(1.05)}18%{transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:translateY(-40px)}}
+  .status{position:absolute;left:24px;top:24px;font-size:20px;color:rgba(255,255,255,.5);z-index:3}
+  .som{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.75);font-family:"Bebas Neue",Impact,sans-serif;font-size:90px;text-align:center;line-height:1}
+  .som.on{display:flex}
+  .confete{position:absolute;width:22px;height:32px;border-radius:4px;z-index:6;pointer-events:none;animation:cai var(--d) cubic-bezier(.2,.6,.4,1) forwards}
+  @keyframes cai{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
+</style>
+</head>
+<body>
+<div id="stage" class="tema-trabalhista var-0">
+  <div class="padrao"></div><div class="raios"></div>
+
+  <div class="topo">
+    <div class="tag" id="tag">⚖️ DIREITOS TRABALHISTAS</div>
+    <div class="relogio" id="relogio">
+      <svg width="170" height="170"><circle cx="85" cy="85" r="72" fill="rgba(0,0,0,.55)" stroke="rgba(255,255,255,.18)" stroke-width="14"/>
+        <circle id="arco" cx="85" cy="85" r="72" fill="none" stroke="var(--acc)" stroke-width="14" stroke-linecap="round" stroke-dasharray="452.4" stroke-dashoffset="0"/></svg>
+      <div class="t bebas" id="seg">20</div>
+    </div>
+  </div>
+  <div class="titulo bebas stroke" id="titulo"><b>VERDADEIRO</b> OU <i>FALSO</i>?</div>
+
+  <div class="area">
+    <div class="q" id="q">
+      <div class="emoji" id="emoji">⚖️</div>
+      <div class="mostra-0"><div class="txt" id="txt0"></div></div>
+      <div class="mostra-1"><div class="bal"><div class="txt" id="txt1"></div></div></div>
+      <div class="mostra-2"><div class="faixa bebas"><span>📰 VOCÊ SABIA?</span><b id="numFaixa"></b></div><div class="corpo"><div class="emoji" id="emoji2"></div><div class="txt" id="txt2"></div></div></div>
+    </div>
+    <div class="rev" id="rev"><div class="carimbo bebas" id="carimbo"></div><div class="explica" id="explica"></div></div>
+  </div>
+
+  <div class="cta bebas" id="cta">💬 COMENTE <b class="V">V</b> OU <b class="F">F</b></div>
+  <div class="botoes">
+    <div class="bt V" id="btV"><div class="l bebas">V</div><div class="s bebas">VERDADEIRO</div><div class="p" id="pV">0%</div></div>
+    <div class="bt F" id="btF"><div class="l bebas">F</div><div class="s bebas">FALSO</div><div class="p" id="pF">0%</div></div>
+  </div>
+  <div class="barra"><div class="fill" id="fill"></div></div>
+  <div class="info"><span id="nResp">0 respostas</span><span id="infoDir">PERGUNTA 1</span></div>
+  <div class="feed" id="feed"></div>
+
+  <div class="rodape">
+    <div class="top3" id="top3"></div>
+    <div class="regras">✅ ACERTO 10 PTS · ⚡ 1º A ACERTAR +5 · 🎁 PRESENTE = DOBRO</div>
+    <div class="legal" id="legal"></div>
+  </div>
+
+  <div class="ranking" id="ranking"><h2 class="bebas">🏆 RANKING DA LIVE</h2><div class="sub">quem mais acertou até agora</div><div id="rkLista"></div></div>
+  <div class="toasts" id="toasts"></div>
+  <div class="status" id="status"></div>
+  <div class="som" id="som">TOQUE NA TELA<br>PARA ATIVAR O SOM</div>
+</div>
+
+<script src="som.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const stage = $('stage');
+  const fit = () => { const s = Math.min(innerWidth / 1080, innerHeight / 1920); stage.style.transform = `translate(-50%,-50%) scale(${s})`; };
+  addEventListener('resize', fit); fit();
+
+  const TEMAS = {
+    trabalhista: { tag: '⚖️ DIREITOS TRABALHISTAS', emoji: '⚖️' },
+    financas: { tag: '💰 FINANÇAS PESSOAIS', emoji: '💰' },
+  };
+  let S = null, skew = 0, fimEm = 0, durTotal = 20, ultimoSeg = -1, perguntaAtual = null, faseAtual = null;
+
+  // ---------- helpers
+  function avatar(url, cls) {
+    if (url) {
+      const i = document.createElement('img'); i.referrerPolicy = 'no-referrer'; i.src = url; i.alt = '';
+      i.onerror = () => i.replaceWith(Object.assign(document.createElement('div'), { className: 'av' }));
+      return i;
+    }
+    return Object.assign(document.createElement('div'), { className: 'av' });
+  }
+  const tamTexto = (t) => t.length < 55 ? 72 : t.length < 85 ? 62 : t.length < 115 ? 54 : 46;
+  function toast(txt, cls = '') {
+    const t = document.createElement('div'); t.className = 'toast ' + cls; t.textContent = txt;
+    $('toasts').appendChild(t); setTimeout(() => t.remove(), 2900);
+    while ($('toasts').children.length > 1) $('toasts').firstChild.remove();
+  }
+  function confete(cor) {
+    for (let i = 0; i < 40; i++) {
+      const c = document.createElement('div'); c.className = 'confete';
+      c.style.background = [cor, '#ffd23f', '#fff', '#5aa9ff'][i % 4];
+      c.style.left = (540 + (Math.random() * 300 - 150)) + 'px'; c.style.top = '760px';
+      const ang = Math.random() * Math.PI * 2, dist = 300 + Math.random() * 500;
+      c.style.setProperty('--x', Math.cos(ang) * dist + 'px'); c.style.setProperty('--y', Math.sin(ang) * dist + 300 + 'px');
+      c.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg'); c.style.setProperty('--d', (1 + Math.random()) + 's');
+      c.addEventListener('animationend', () => c.remove(), { once: true });
+      stage.appendChild(c);
+    }
+  }
+
+  // ---------- render
+  function aplicar(s) {
+    S = s; skew = s.agora - Date.now(); fimEm = s.fimEm;
+    if (s.conexao) status(s.conexao);
+    if (s.musica) Som.configurar(s.musica);
+    $('legal').textContent = s.rodape || '';
+    durTotal = s.fase === 'pergunta' ? s.duracao.pergunta : s.fase === 'revelacao' ? s.duracao.revelacao : s.duracao.ranking;
+
+    const q = s.pergunta;
+    const nova = q && (!perguntaAtual || perguntaAtual !== q.id + ':' + s.numero);
+    if (q && nova) {
+      perguntaAtual = q.id + ':' + s.numero;
+      const tema = TEMAS[q.categoria] || TEMAS.trabalhista;
+      stage.className = `tema-${q.categoria} var-${s.numero % 3}`;
+      $('tag').textContent = tema.tag;
+      const em = q.emoji || tema.emoji;
+      $('emoji').textContent = em; $('emoji2').textContent = em;
+      ['txt0', 'txt1', 'txt2'].forEach((id) => { $(id).textContent = q.afirmacao; $(id).style.fontSize = tamTexto(q.afirmacao) + 'px'; });
+      $('numFaixa').textContent = `#${s.numero}`;
+      const el = $('q'); el.classList.remove('entra', 'apaga'); void el.offsetWidth; el.classList.add('entra');
+      $('feed').replaceChildren();
+      ['btV', 'btF'].forEach((id) => $(id).classList.remove('certo', 'errado'));
+      $('rev').classList.remove('on');
+      Som.tom(660, 0.08); Som.tom(990, 0.12, 0.09);
+    }
+    $('infoDir').textContent = `PERGUNTA ${s.numero}`;
+    placar(s.votos, s.totalRespostas);
+    top3(s.top);
+
+    // fases
+    if (s.fase !== faseAtual) {
+      faseAtual = s.fase;
+      $('cta').classList.toggle('some', s.fase !== 'pergunta');
+      $('ranking').classList.toggle('on', s.fase === 'ranking');
+      if (s.fase === 'revelacao') revelar(s);
+      if (s.fase === 'ranking') ranking(s.top);
+    }
+  }
+
+  function placar(v, total) {
+    const tv = v.V || 0, tf = v.F || 0, t = tv + tf;
+    const pv = t ? Math.round(tv / t * 100) : 50;
+    $('pV').textContent = (t ? pv : 0) + '%'; $('pF').textContent = (t ? 100 - pv : 0) + '%';
+    $('fill').style.width = pv + '%';
+    $('nResp').textContent = `${total || t} ${(total || t) === 1 ? 'resposta' : 'respostas'}`;
+  }
+
+  function top3(top) {
+    const box = $('top3'); box.replaceChildren();
+    (top || []).slice(0, 3).forEach((p, i) => {
+      const d = document.createElement('div'); d.className = 'tp';
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = `${['🥇', '🥈', '🥉'][i]} ${p.nick}`;
+      const b = document.createElement('b'); b.textContent = p.pontos;
+      d.append(avatar(p.avatar), n, b); box.appendChild(d);
+    });
+  }
+
+  function revelar(s) {
+    const q = s.pergunta; if (!q || !q.resposta) return;
+    const certo = q.resposta, errado = certo === 'V' ? 'F' : 'V';
+    $('bt' + certo).classList.add('certo'); $('bt' + errado).classList.add('errado');
+    $('carimbo').className = 'carimbo bebas ' + certo;
+    $('carimbo').textContent = certo === 'V' ? '✅ VERDADEIRO' : '❌ FALSO';
+    const total = (s.votos.V || 0) + (s.votos.F || 0);
+    const pct = total ? Math.round(s.acertaram / total * 100) : 0;
+    let extra = total ? `\n${pct}% acertaram` : '';
+    if (s.primeiroAcerto) extra += ` · ⚡ 1º: @${s.primeiroAcerto.nick}`;
+    $('explica').textContent = (q.explicacao || '') + extra;
+    $('explica').style.whiteSpace = 'pre-line';
+    $('q').classList.add('apaga');
+    $('rev').classList.add('on');
+    Som.abaixar(0.2, 2);
+    if (certo === 'V') { Som.tom(523, 0.12, 0, .12); Som.tom(659, 0.12, 0.12, .12); Som.tom(784, 0.3, 0.24, .12); }
+    else { Som.tom(392, 0.18, 0, .12); Som.tom(311, 0.35, 0.2, .12); }
+    confete(getComputedStyle(document.documentElement).getPropertyValue(certo === 'V' ? '--v' : '--f'));
+  }
+
+  function ranking(top) {
+    const l = $('rkLista'); l.replaceChildren();
+    if (!top || !top.length) {
+      const d = document.createElement('div'); d.className = 'sub'; d.textContent = 'Ninguém pontuou ainda. Comenta V ou F!'; l.appendChild(d); return;
+    }
+    top.forEach((p, i) => {
+      const r = document.createElement('div'); r.className = 'rk';
+      const pos = document.createElement('div'); pos.className = 'pos'; pos.textContent = ['🥇', '🥈', '🥉', '4º', '5º'][i];
+      const n = document.createElement('div'); n.className = 'n'; n.textContent = p.nick;
+      const pt = document.createElement('div'); pt.className = 'pt'; pt.textContent = `${p.pontos} pts`;
+      r.append(pos, avatar(p.avatar), n, pt); l.appendChild(r);
+    });
+    for (let i = 0; i < 4; i++) Som.tom(700 + i * 180, 0.16, i * 0.16, 0.1);
+  }
+
+  function resposta(m) {
+    placar(m.votos, m.total);
+    const bt = $('bt' + m.resp); bt.classList.remove('bump'); void bt.offsetWidth; bt.classList.add('bump');
+    setTimeout(() => bt.classList.remove('bump'), 160);
+    const c = document.createElement('div'); c.className = 'chip';
+    const r = document.createElement('span'); r.className = 'r ' + m.resp; r.textContent = m.resp;
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = (m.dobro ? '🎁 ' : '') + m.user.nick;
+    c.append(avatar(m.user.avatar), n, r);
+    const f = $('feed'); f.prepend(c); while (f.children.length > 3) f.lastChild.remove();
+    agora = Date.now(); if (agora - ultimoBlip > 120) { ultimoBlip = agora; Som.tom(m.resp === 'V' ? 1200 : 900, 0.05, 0, 0.06); }
+  }
+  let ultimoBlip = 0, agora = 0;
+
+  // ---------- relógio
+  setInterval(() => {
+    if (!fimEm) return;
+    const ms = Math.max(0, fimEm - (Date.now() + skew)), seg = Math.ceil(ms / 1000);
+    $('seg').textContent = seg;
+    const frac = Math.max(0, Math.min(1, ms / (durTotal * 1000)));
+    $('arco').style.strokeDashoffset = String(452.4 * (1 - frac));
+    const urg = faseAtual === 'pergunta' && seg <= 5 && seg > 0;
+    $('relogio').classList.toggle('urg', urg);
+    $('arco').style.stroke = urg ? 'var(--f)' : 'var(--acc)';
+    if (urg && seg !== ultimoSeg) { ultimoSeg = seg; Som.tom(seg === 1 ? 1500 : 1100, 0.06, 0, 0.1); }
+  }, 100);
+
+  function status(s) { $('status').textContent = s ? `● ${s}` : ''; }
+
+  // ---------- conexão
+  function conectar() {
+    const k = new URLSearchParams(location.search).get('k') || '';
+    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws${k ? '?k=' + encodeURIComponent(k) : ''}`);
+    ws.onmessage = (e) => {
+      let m; try { m = JSON.parse(e.data); } catch { return; }
+      if (m.type === 'quiz') aplicar(m);
+      else if (m.type === 'resposta') resposta(m);
+      else if (m.type === 'dobro') { toast(`🎁 @${m.user.nick} mandou ${m.presente}: PONTOS EM DOBRO!`); Som.tom(880, .1); Som.tom(1320, .2, .1); }
+      else if (m.type === 'entrou') toast(`👋 @${m.user.nick} chegou! Comenta V ou F`, 'br');
+      else if (m.type === 'status') status(m.conexao);
+    };
+    ws.onclose = (e) => {
+      if (e.code === 4001) return status('chave inválida: use o link com ?k=');
+      status('reconectando…'); setTimeout(conectar, 1500);
+    };
+  }
+  conectar();
+  setInterval(() => { fetch('/ping', { cache: 'no-store' }).catch(() => {}); }, 4 * 60 * 1000);
+})();
+</script>
+</body>
+</html>

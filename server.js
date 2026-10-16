@@ -17,6 +17,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
+const { criarQuiz } = require('./quiz');
 
 const ROOT = __dirname;
 const PUBLIC = path.join(ROOT, 'public');
@@ -69,6 +70,11 @@ function loadConfig() {
 let cfg = loadConfig();
 const numeros = () => cfg.opcoes.map((o) => o.numero);
 
+// ---------------------------------------------------------------- modo: urna (13 x 22) ou quiz (V/F)
+const MODO = String(process.env.MODO || cfg.modo || 'urna').toLowerCase() === 'quiz' ? 'quiz' : 'urna';
+const lerPerguntas = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'perguntas.json'), 'utf8'));
+let quiz = null; // criado depois do broadcast existir
+
 // ---------------------------------------------------------------- estado
 function freshState() {
   return {
@@ -117,6 +123,7 @@ function broadcast(msg) {
   const data = JSON.stringify(msg);
   for (const ws of clients) if (ws.readyState === 1) ws.send(data);
 }
+function snapshotAtual() { return quiz ? { ...quiz.snapshot(), conexao: conexaoStatus } : snapshot(); }
 function snapshot() {
   const top = Object.entries(state.doadores)
     .map(([id, d]) => ({ id, ...d }))
@@ -198,6 +205,7 @@ function onComentario(rawUser, texto) {
   const user = sanitizeUser(rawUser);
   stats.chat++;
   if (chatsLogados < 40) { chatsLogados++; console.log(`[chat] @${user.id}: ${String(texto || '').slice(0, 80)}`); }
+  if (quiz) { if (quiz.comentario(user, texto)) stats.votos++; return; }
   const m = String(texto || '').match(/\b(\d{1,5})\b/);
   if (!m || !numeros().includes(m[1])) return;
   const numero = m[1];
@@ -220,6 +228,7 @@ function onComentario(rawUser, texto) {
 function onPresente(rawUser, { nome, repeticoes, diamantes }) {
   stats.presentes++;
   const user = sanitizeUser(rawUser);
+  if (quiz) return quiz.presente(user, nome);
   const regra = cfg.presentes[nome];
   const unit = regra ? regra.votos : (diamantes || 0) * (cfg.votosPorDiamanteParaPresentesNaoMapeados || 0);
   const votos = Math.round(unit * Math.max(1, repeticoes || 1));
@@ -242,7 +251,7 @@ function onCurtida(rawUser, qtd) {
   const c = cfg.curtidas || {};
   const n = Math.max(1, Number(qtd) || 1);
   stats.curtidas += n;
-  if (c.habilitado === false) return;
+  if (quiz || c.habilitado === false) return;
   const user = sanitizeUser(rawUser);
   const numero = ultimoNumero.get(user.id);
   if (!numero) return; // curtida só vale para quem já escolheu o time no chat
@@ -273,7 +282,7 @@ function reiniciar() {
 
 // relógio da rodada
 setInterval(() => {
-  if (!cfg.rodada.duracaoSegundos) return;
+  if (quiz || !cfg.rodada.duracaoSegundos) return;
   const now = Date.now();
   if (!state.vencedor && now >= state.rodadaFimEm) {
     const [a, b] = numeros();
@@ -306,6 +315,7 @@ function startSimulador() {
     const r = Math.random();
     if (r < 0.12) onEntrada(user);
     else if (r < 0.3) onCurtida(user, 1 + Math.floor(Math.random() * 6));
+    else if (quiz && r < 0.85) onComentario(user, ['V', 'F', 'verdadeiro', 'falso', 'v', 'f', 'sim', 'não'][Math.floor(Math.random() * 8)]);
     else if (r < 0.8) {
       const n = numeros()[Math.random() < 0.55 ? 0 : 1];
       onComentario(user, Math.random() < 0.5 ? n : `vai ${n}!!`);
@@ -410,7 +420,8 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/ping') { res.writeHead(204); return res.end(); } // mantém o serviço acordado
-  let p = url.pathname === '/' ? '/index.html' : url.pathname === '/admin' ? '/admin.html' : url.pathname;
+  const rotas = { '/': MODO === 'quiz' ? '/quiz.html' : '/index.html', '/admin': '/admin.html', '/urna': '/index.html', '/quiz': '/quiz.html' };
+  let p = rotas[url.pathname] || url.pathname;
   const file = path.normalize(path.join(PUBLIC, p));
   if (!file.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, buf) => {
@@ -431,15 +442,21 @@ wss.on('connection', (ws, req) => {
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return ws.close(4001, 'chave');
   }
   clients.add(ws);
-  ws.send(JSON.stringify(snapshot()));
+  ws.send(JSON.stringify(snapshotAtual()));
   ws.on('close', () => clients.delete(ws));
   ws.on('message', (raw) => {
     let m; try { m = JSON.parse(raw); } catch { return; }
-    if (m.cmd === 'reset') reiniciar();
+    if (m.cmd === 'reset') { if (quiz) quiz.reiniciar(); else reiniciar(); }
+    else if (m.cmd === 'pular' && quiz) quiz.pular();
     else if (m.cmd === 'manual' && numeros().includes(String(m.numero))) {
       registrarVoto({ id: 'admin', nick: 'Manual', avatar: '' }, String(m.numero), Math.max(1, Math.min(1000, Number(m.votos) || 1)), 'comentario');
     } else if (m.cmd === 'reload-config') {
-      try { cfg = loadConfig(); broadcast(snapshot()); console.log('[config] recarregado'); }
+      try {
+        cfg = loadConfig();
+        if (quiz) quiz.recarregarPerguntas(lerPerguntas());
+        broadcast(snapshotAtual());
+        console.log('[config] recarregado');
+      }
       catch (e) { console.error('[config]', e.message); }
     }
   });
@@ -448,6 +465,11 @@ wss.on('connection', (ws, req) => {
 function ipsLocais() {
   return Object.values(os.networkInterfaces()).flat()
     .filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i.address);
+}
+
+if (MODO === 'quiz') {
+  quiz = criarQuiz({ broadcast, getCfg: () => cfg, perguntas: lerPerguntas() });
+  console.log(`[quiz] ${quiz.total()} perguntas carregadas`);
 }
 
 server.listen(PORT, HOST, () => {

@@ -1,4 +1,5 @@
 {
+  "modo": "quiz",
   "tiktokUsername": "mazzeldigital",
   "opcoes": [
     {
@@ -55,5 +56,15 @@
   "musica": {
     "habilitada": true,
     "volume": 0.35
+  },
+  "quiz": {
+    "titulo": "VERDADEIRO OU FALSO?",
+    "segundosPergunta": 20,
+    "segundosRevelacao": 7,
+    "segundosRanking": 7,
+    "rankingACadaPerguntas": 5,
+    "pontosAcerto": 10,
+    "bonusPrimeiro": 5,
+    "rodape": "Conteúdo educativo. Não substitui orientação de advogado ou planejador financeiro."
   }
 }

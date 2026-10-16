@@ -2,6 +2,28 @@
 
 Placar ao vivo entre dois números (padrão **13 x 22**). Comentário e presente da live viram voto, com a animação da urna digitando e confirmando cada voto.
 
+## Modo Quiz: Verdadeiro ou Falso (padrão atual)
+
+`config.json` → `"modo": "quiz"` (ou `"urna"` para o jogo 13 x 22). No Render dá para trocar sem mexer no código com a variável `MODO`.
+
+- **Público comenta `V` ou `F`** (também vale verdadeiro/falso/sim/não). Vale só a primeira resposta de cada pessoa por pergunta.
+- **Ciclo:** pergunta (20 s) → revelação com explicação (7 s) → a cada 5 perguntas, ranking (7 s).
+- **Pontos:** acerto = 10, primeiro a acertar = +5, **presente = pontos em dobro** nesta pergunta e na próxima.
+- **Visual muda a cada pergunta:** tema azul (trabalhista) ou verde (finanças) e 3 layouts que se alternam (cartão, balão, manchete).
+- Tempos e pontuação ficam em `config.json` → `quiz`.
+
+### Perguntas (`perguntas.json`)
+```json
+{ "id": "t01", "categoria": "trabalhista", "emoji": "💸",
+  "afirmacao": "Quem pede demissão recebe a multa de 40% do FGTS.",
+  "resposta": false,
+  "explicacao": "A multa de 40% só é paga na demissão sem justa causa." }
+```
+`categoria` = `trabalhista` ou `financas`. Revise as perguntas antes de ir ao ar: evite regras que mudam com o tempo (Selic, rendimento de produto específico, leis em discussão).
+
+Painel (`/admin?k=...`): **Pular / revelar agora**, **Zerar ranking** e **Recarregar config** (relê também as perguntas).
+O jogo da urna continua disponível em `/urna`.
+
 ## Requisitos
 - Windows 10/11 com **Node.js 20+** (https://nodejs.org)
 - OBS Studio ou TikTok LIVE Studio
@@ -43,7 +65,7 @@ Se o Windows perguntar sobre o firewall na primeira vez, permita para **Redes pr
 | Ação na live | Resultado |
 |---|---|
 | Comentar `13` ou `22` | +1 voto (no máximo 1 a cada 15 s por pessoa) |
-| Presente com `"numero"` no config | vai direto para aquele time (Rose → 13, Daisy → 22) |
+| Presente com `"numero"` no config | vai direto para aquele time (Rose → 13, TikTok → 22) |
 | Presente sem `"numero"` (TikTok) | vai para o último número que a pessoa digitou; se ela ainda não digitou, fica guardado 2 min esperando |
 | Presente não listado | 1 voto por diamante, mesma regra do time |
 | Últimos 60 s da rodada | votos valem **x5** (`multiplicadorFinal`) |
